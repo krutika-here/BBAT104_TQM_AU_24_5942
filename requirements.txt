@@ -1,0 +1,6 @@
+# BBAT104 Online Quiz System - Web Migration Dependencies
+# Course: BBAT104 Fundamentals of TQM | Reg: AU-24-5942
+# Assigned Quality Goal: Q08 - Improve User Satisfaction
+
+# Core Web Framework
+Flask>=3.0.0
