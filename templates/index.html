@@ -1,0 +1,204 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - Online Quiz System{% endblock %}
+
+{% block content %}
+<div class="dashboard-container">
+    <!-- Hero / Welcome Section -->
+    <section class="hero-banner">
+        <div class="hero-content">
+            <h1 class="hero-title">Online Quiz System</h1>
+            <p class="hero-lead">
+                An automated computer-based assessment platform developed for <strong>BBAT104 &ndash; Fundamentals of Total Quality Management</strong>.
+            </p>
+            <div class="hero-tags">
+                <span class="hero-tag">🎓 Roll No: AU-24-5942</span>
+                <span class="hero-tag">🎯 Goal: Q08 User Satisfaction</span>
+                <span class="hero-tag">🛡️ Poka-Yoke Mistake Proofing</span>
+                <span class="hero-tag">⚡ In-Memory Evaluation</span>
+            </div>
+        </div>
+        <div class="hero-aside">
+            <div class="phase-indicator-card">
+                <span class="phase-badge">Phase 2 Completed</span>
+                <p class="phase-desc">Web application shell initialized. Core navigation, responsive layout, and theme switching are now active.</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Dashboard Statistics (Explicit Placeholders - Requirement C.6) -->
+    <section class="dashboard-stats-section">
+        <div class="section-header">
+            <h2 class="section-title">System Metrics & Activity Summary</h2>
+            <span class="placeholder-notice">Notice: Metrics below are placeholders. Live database binding will be enabled in Phase 3/6.</span>
+        </div>
+
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-icon icon-blue">📚</div>
+                <div class="stat-body">
+                    <span class="stat-label">Available Quizzes</span>
+                    <span class="stat-value placeholder-val">--</span>
+                    <span class="stat-status badge badge-info">Placeholder (Phase 3)</span>
+                </div>
+            </div>
+
+            <div class="stat-card">
+                <div class="stat-icon icon-indigo">❓</div>
+                <div class="stat-body">
+                    <span class="stat-label">Total Questions</span>
+                    <span class="stat-value placeholder-val">--</span>
+                    <span class="stat-status badge badge-info">Placeholder (Phase 3)</span>
+                </div>
+            </div>
+
+            <div class="stat-card">
+                <div class="stat-icon icon-green">📝</div>
+                <div class="stat-body">
+                    <span class="stat-label">Student Attempts</span>
+                    <span class="stat-value placeholder-val">--</span>
+                    <span class="stat-status badge badge-info">Placeholder (Phase 6)</span>
+                </div>
+            </div>
+
+            <div class="stat-card">
+                <div class="stat-icon icon-amber">📈</div>
+                <div class="stat-body">
+                    <span class="stat-label">Average Pass Rate</span>
+                    <span class="stat-value placeholder-val">--%</span>
+                    <span class="stat-status badge badge-info">Placeholder (Phase 6)</span>
+                </div>
+            </div>
+
+            <div class="stat-card">
+                <div class="stat-icon icon-red">📋</div>
+                <div class="stat-body">
+                    <span class="stat-label">Defects Logged (TQM)</span>
+                    <span class="stat-value placeholder-val">--</span>
+                    <span class="stat-status badge badge-info">Placeholder (Phase 7)</span>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Feature Modules Overview Grid -->
+    <section class="modules-section">
+        <h2 class="section-title">System Modules & Capabilities Overview</h2>
+
+        <div class="modules-grid">
+            <!-- Module 1: Student Quiz Portal -->
+            <div class="module-card">
+                <div class="module-header">
+                    <span class="module-icon">✍️</span>
+                    <h3 class="module-name">Student Quiz Portal</h3>
+                </div>
+                <p class="module-text">
+                    Interactive examination engine featuring Poka-Yoke identity validation, real-time non-blocking countdown timer, and in-memory question delivery.
+                </p>
+                <div class="module-footer">
+                    <span class="badge badge-warning">Scheduled for Phase 3</span>
+                    <a href="{{ url_for('quizzes_placeholder') }}" class="btn btn-sm btn-outline">Preview &rarr;</a>
+                </div>
+            </div>
+
+            <!-- Module 2: Admin CRUD Operations -->
+            <div class="module-card">
+                <div class="module-header">
+                    <span class="module-icon">🛠️</span>
+                    <h3 class="module-name">Quizzes & Questions CRUD</h3>
+                </div>
+                <p class="module-text">
+                    Complete administrative management covering Create, Read, Update, and Delete operations for quizzes and multiple-choice questions with cascading integrity.
+                </p>
+                <div class="module-footer">
+                    <span class="badge badge-warning">Scheduled for Phase 5</span>
+                    <a href="{{ url_for('quizzes_placeholder') }}" class="btn btn-sm btn-outline">Preview &rarr;</a>
+                </div>
+            </div>
+
+            <!-- Module 3: Historical Results & Gradebook -->
+            <div class="module-card">
+                <div class="module-header">
+                    <span class="module-icon">📋</span>
+                    <h3 class="module-name">Student Results & Gradebook</h3>
+                </div>
+                <p class="module-text">
+                    Historical attempt records displaying student scores, percentages, passing status, and detailed question-by-question review breakdowns.
+                </p>
+                <div class="module-footer">
+                    <span class="badge badge-warning">Scheduled for Phase 6</span>
+                    <a href="{{ url_for('results_placeholder') }}" class="btn btn-sm btn-outline">Preview &rarr;</a>
+                </div>
+            </div>
+
+            <!-- Module 4: TQM SQC Tools & Defect Logging -->
+            <div class="module-card">
+                <div class="module-header">
+                    <span class="module-icon">📊</span>
+                    <h3 class="module-name">TQM Tools & Defect Checksheets</h3>
+                </div>
+                <p class="module-text">
+                    Digital checksheets, 80/20 Pareto charts, Failure Mode & Effects Analysis (FMEA) with RPN, Ishikawa Fishbone analysis, and Deming PDCA improvement logs.
+                </p>
+                <div class="module-footer">
+                    <span class="badge badge-warning">Scheduled for Phase 7</span>
+                    <a href="{{ url_for('tqm_placeholder') }}" class="btn btn-sm btn-outline">Preview &rarr;</a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Assigned Quality Goal Q08 Roadmap Section -->
+    <section class="goal-roadmap-section">
+        <div class="goal-roadmap-card">
+            <div class="goal-header">
+                <div>
+                    <span class="goal-tag">Assigned TQM Quality Goal</span>
+                    <h2 class="goal-title">Q08 &ndash; Improve User Satisfaction</h2>
+                </div>
+                <span class="badge badge-success">5 Dedicated Features</span>
+            </div>
+            <p class="goal-lead">
+                To maximize usability, accessibility, and user satisfaction, the browser-based platform will incorporate five specialized capabilities:
+            </p>
+            <div class="goal-features-list">
+                <div class="goal-feature-item">
+                    <span class="feature-status-dot dot-active"></span>
+                    <div class="feature-info">
+                        <strong>1. Interactive Dashboard</strong>
+                        <p>Real-time metrics, active quiz cards, attempt summary widgets, and instant navigation.</p>
+                    </div>
+                </div>
+                <div class="goal-feature-item">
+                    <span class="feature-status-dot dot-pending"></span>
+                    <div class="feature-info">
+                        <strong>2. Visual Reports</strong>
+                        <p>Dynamic charts visualizing performance distribution, score trends, and topic mastery.</p>
+                    </div>
+                </div>
+                <div class="goal-feature-item">
+                    <span class="feature-status-dot dot-active"></span>
+                    <div class="feature-info">
+                        <strong>3. Theme Toggle (Active)</strong>
+                        <p>Light/Dark mode toggle with persistent client-side state and system preference detection.</p>
+                    </div>
+                </div>
+                <div class="goal-feature-item">
+                    <span class="feature-status-dot dot-active"></span>
+                    <div class="feature-info">
+                        <strong>4. Keyboard Shortcuts (Active)</strong>
+                        <p>Fast keyboard navigation (Press <code>T</code> to toggle theme, shortcuts for exam navigation in Phase 3).</p>
+                    </div>
+                </div>
+                <div class="goal-feature-item">
+                    <span class="feature-status-dot dot-pending"></span>
+                    <div class="feature-info">
+                        <strong>5. User Profile Settings</strong>
+                        <p>Student / Admin profile preferences, custom identification, and personalized view controls.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+</div>
+{% endblock %}

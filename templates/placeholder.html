@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+
+{% block title %}{{ module_title }} - Online Quiz System{% endblock %}
+
+{% block content %}
+<div class="placeholder-page-container">
+    <div class="placeholder-box">
+        <span class="placeholder-icon">🚧</span>
+        <h1 class="placeholder-title">{{ module_title }}</h1>
+        <div class="placeholder-badge-wrap">
+            <span class="badge badge-warning">{{ phase_info }}</span>
+        </div>
+        <p class="placeholder-text">{{ description }}</p>
+
+        <div class="placeholder-alert">
+            <strong>Phase 2 Scope Boundary:</strong>
+            <p>In accordance with project preservation rules, application logic, database reads/writes, and interactive evaluation are restricted to subsequent phases.</p>
+        </div>
+
+        <div class="placeholder-actions">
+            <a href="{{ url_for('index') }}" class="btn btn-primary">&larr; Return to Dashboard</a>
+        </div>
+    </div>
+</div>
+{% endblock %}
