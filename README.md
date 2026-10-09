@@ -180,6 +180,42 @@ python3 main.py
 python3 main.py --cli
 ```
 
+### Flask Website
+
+The browser-based migration currently provides a dashboard shell, shared navigation, a persistent light/dark theme, and a theme keyboard shortcut (`T`). Dashboard metrics are placeholders; quiz, results, reports, and TQM pages are not yet implemented and are clearly labeled as such. The existing Tkinter/CLI application remains available using the commands above.
+
+#### Create an environment and install dependencies
+
+On Linux or macOS:
+```bash
+python3 -m venv .venv
+source .venv/bin/activate
+python -m pip install -r requirements.txt
+```
+
+On Windows:
+```powershell
+py -m venv .venv
+.venv\Scripts\Activate.ps1
+python -m pip install -r requirements.txt
+```
+
+#### Run the website
+
+With the virtual environment activated:
+```bash
+python app.py
+```
+
+Open [http://127.0.0.1:5000](http://127.0.0.1:5000). The development server binds to the local machine and debug mode is off by default.
+
+#### Run the automated website tests
+
+With the virtual environment activated:
+```bash
+python -m unittest discover -s tests -v
+```
+
 ---
 
 ## Application of TQM Principles
