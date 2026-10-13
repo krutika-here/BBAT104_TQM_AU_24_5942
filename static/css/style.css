@@ -780,6 +780,21 @@ body {
     margin-top: 24px;
 }
 
+.quiz-navigation-actions {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.btn-submit-quiz {
+    background-color: var(--danger);
+    color: #FFFFFF;
+}
+
+.btn-submit-quiz:hover {
+    filter: brightness(0.92);
+}
+
 .quiz-shortcut-help {
     color: var(--text-muted);
     font-size: 12px;

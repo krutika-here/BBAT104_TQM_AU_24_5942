@@ -35,6 +35,17 @@ class FlaskApplicationTests(unittest.TestCase):
                     correct_option TEXT NOT NULL,
                     marks INTEGER DEFAULT 1
                 );
+                CREATE TABLE attempts (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    student_name TEXT NOT NULL,
+                    student_roll TEXT NOT NULL,
+                    quiz_id INTEGER NOT NULL,
+                    score INTEGER NOT NULL,
+                    total_marks INTEGER NOT NULL,
+                    percentage REAL NOT NULL,
+                    status TEXT NOT NULL,
+                    completed_at TEXT DEFAULT CURRENT_TIMESTAMP
+                );
                 INSERT INTO quizzes VALUES
                     (41, 'Fixture Quiz', 'Test-only catalog data', 12, 60.0, CURRENT_TIMESTAMP),
                     (42, 'Empty Fixture', '', 5, 50.0, CURRENT_TIMESTAMP);
@@ -193,6 +204,143 @@ class FlaskApplicationTests(unittest.TestCase):
         )
         self.assertEqual(response.status_code, 400)
         self.assertEqual(self.client.get("/attempt/question/0").status_code, 404)
+
+    def _submit_quiz(
+        self,
+        answer=None,
+        question_number=1,
+        client=None,
+        csrf_token=None,
+        follow_redirects=True,
+    ):
+        client = client or self.client
+        if csrf_token is None:
+            page = client.get(f"/attempt/question/{question_number}")
+            csrf_token = re.search(
+                rb'name="csrf_token" value="([^"]+)"', page.data
+            ).group(1).decode()
+        data = {
+            "csrf_token": csrf_token,
+            "question_number": str(question_number),
+        }
+        if answer is not None:
+            data["answer"] = answer
+        return client.post(
+            "/attempt/submit",
+            data=data,
+            follow_redirects=follow_redirects,
+        )
+
+    def _answer_and_next(self, answer, question_number):
+        page = self.client.get(f"/attempt/question/{question_number}")
+        csrf_token = re.search(
+            rb'name="csrf_token" value="([^"]+)"', page.data
+        ).group(1).decode()
+        return self.client.post(
+            f"/attempt/question/{question_number}",
+            data={
+                "csrf_token": csrf_token,
+                "answer": answer,
+                "action": "next",
+            },
+        )
+
+    def _stored_attempt(self):
+        with sqlite3.connect(database.DB_PATH) as connection:
+            return connection.execute(
+                "SELECT student_name, student_roll, quiz_id, score, total_marks, percentage, status "
+                "FROM attempts"
+            ).fetchall()
+
+    def test_submission_grades_correct_answers_using_stored_marks(self):
+        self._start_attempt()
+        self._answer_and_next("A", 1)
+
+        result = self._submit_quiz(answer="D", question_number=2)
+        self.assertIn(b"3 of 3 marks (100.00%). Passed.", result.data)
+        self.assertEqual(
+            self._stored_attempt(),
+            [("Test Student", "TEST-1", 41, 3, 3, 100.0, "Passed")],
+        )
+
+    def test_submission_grades_incorrect_answers_as_zero(self):
+        self._start_attempt()
+        self._answer_and_next("B", 1)
+
+        result = self._submit_quiz(answer="B", question_number=2)
+        self.assertIn(b"0 of 3 marks (0.00%). Failed.", result.data)
+        self.assertEqual(self._stored_attempt()[0][3:], (0, 3, 0.0, "Failed"))
+
+    def test_unanswered_question_receives_no_marks(self):
+        self._start_attempt()
+        self._answer_and_next("A", 1)
+
+        result = self._submit_quiz(question_number=2)
+        self.assertIn(b"2 of 3 marks (66.67%). Passed.", result.data)
+        self.assertEqual(self._stored_attempt()[0][3:], (2, 3, 66.67, "Passed"))
+
+    def test_invalid_submission_is_rejected_without_saving_attempt(self):
+        self._start_attempt()
+        page = self.client.get("/attempt/question/1")
+        csrf_token = re.search(
+            rb'name="csrf_token" value="([^"]+)"', page.data
+        ).group(1).decode()
+
+        response = self.client.post(
+            "/attempt/submit",
+            data={
+                "csrf_token": csrf_token,
+                "question_number": "1",
+                "answer": "X",
+            },
+        )
+        self.assertEqual(response.status_code, 400)
+        self.assertEqual(self._stored_attempt(), [])
+
+        response = self.client.post(
+            "/attempt/submit",
+            data={"csrf_token": csrf_token, "question_number": "not-a-number"},
+        )
+        self.assertEqual(response.status_code, 400)
+        self.assertEqual(self._stored_attempt(), [])
+
+    def test_duplicate_submission_with_stale_session_does_not_duplicate_attempt(self):
+        self._start_attempt()
+        page = self.client.get("/attempt/question/1")
+        csrf_token = re.search(
+            rb'name="csrf_token" value="([^"]+)"', page.data
+        ).group(1).decode()
+        stale_cookie = self.client.get_cookie(app.config["SESSION_COOKIE_NAME"])
+        duplicate_client = app.test_client()
+        duplicate_client.set_cookie(app.config["SESSION_COOKIE_NAME"], stale_cookie.value)
+
+        first = self._submit_quiz(answer="A", csrf_token=csrf_token)
+        self.assertIn(b"Quiz graded and saved", first.data)
+        duplicate = self._submit_quiz(
+            answer="A",
+            client=duplicate_client,
+            csrf_token=csrf_token,
+        )
+
+        self.assertIn(b"already been submitted", duplicate.data)
+        self.assertEqual(len(self._stored_attempt()), 1)
+
+    def test_submission_rejects_quiz_deleted_during_attempt(self):
+        self._start_attempt()
+        page = self.client.get("/attempt/question/1")
+        csrf_token = re.search(
+            rb'name="csrf_token" value="([^"]+)"', page.data
+        ).group(1).decode()
+        with sqlite3.connect(database.DB_PATH) as connection:
+            connection.execute("DELETE FROM quizzes WHERE id = 41")
+
+        response = self._submit_quiz(
+            answer="A",
+            csrf_token=csrf_token,
+            follow_redirects=False,
+        )
+        self.assertEqual(response.status_code, 404)
+        self.assertEqual(self._stored_attempt(), [])
 
 
 if __name__ == "__main__":

@@ -15,6 +15,7 @@
 
         <form method="post" class="quiz-answer-form">
             <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+            <input type="hidden" name="question_number" value="{{ question_number }}">
             <fieldset>
                 <legend>{{ question.question_text }}</legend>
                 {% for letter, text in [
@@ -35,8 +36,15 @@
                 {% else %}
                 <span></span>
                 {% endif %}
-                <button type="submit" name="action" value="next" class="btn btn-primary" accesskey="n"
-                    {% if question_number == question_count %}disabled{% endif %}>Next</button>
+                <div class="quiz-navigation-actions">
+                    <button type="submit" name="action" value="next" class="btn btn-primary" accesskey="n"
+                        {% if question_number == question_count %}disabled{% endif %}>Next</button>
+                    <button type="submit" class="btn btn-submit-quiz"
+                        formaction="{{ url_for('submit_quiz') }}"
+                        onclick="return confirm('Submit and grade this quiz now? Unanswered questions receive no marks.')">
+                        Submit quiz
+                    </button>
+                </div>
             </div>
         </form>
         <p class="quiz-shortcut-help">Keyboard: Alt+P for previous, Alt+N for next. You can change an answer at any time before submission.</p>

@@ -8,8 +8,10 @@ Phase: Phase 2 - Flask Website Shell Only
 
 import os
 import secrets
+import threading
 import time
-from flask import Flask, abort, redirect, render_template, request, session, url_for
+from collections import OrderedDict
+from flask import Flask, abort, flash, redirect, render_template, request, session, url_for
 
 import database
 
@@ -18,6 +20,9 @@ app = Flask(__name__)
 app.secret_key = os.environ.get("FLASK_SECRET_KEY") or secrets.token_hex(32)
 app.config["SESSION_COOKIE_HTTPONLY"] = True
 app.config["SESSION_COOKIE_SAMESITE"] = "Lax"
+_SUBMISSION_LOCK = threading.Lock()
+_SUBMITTED_ATTEMPTS = OrderedDict()
+_MAX_REMEMBERED_SUBMISSIONS = 1000
 
 
 def get_attempt_csrf_token():
@@ -96,6 +101,7 @@ def start_quiz(quiz_id):
         "student_roll": student_roll,
         "question_ids": [question["id"] for question in questions],
         "answers": {},
+        "submission_token": secrets.token_urlsafe(32),
         "started_at": time.time(),
     }
     return redirect(url_for("quiz_question", question_number=1))
@@ -113,7 +119,10 @@ def quiz_question(question_number):
         abort(404)
 
     if request.method == "POST":
-        if request.form.get("csrf_token") != session.get("attempt_csrf_token"):
+        if not secrets.compare_digest(
+            request.form.get("csrf_token", ""),
+            session.get("attempt_csrf_token", ""),
+        ):
             abort(400, description="Invalid or missing form token. Reload the question and try again.")
         action = request.form.get("action")
         answer = request.form.get("answer", "").upper()
@@ -161,6 +170,96 @@ def quiz_question(question_number):
         selected_answer=attempt["answers"].get(str(question["id"]), ""),
         csrf_token=get_attempt_csrf_token(),
     )
+
+
+@app.route("/attempt/submit", methods=["POST"])
+def submit_quiz():
+    """Grade and persist one attempt without exposing prior student results."""
+    attempt = session.get("attempt")
+    if not attempt:
+        return redirect(url_for("quizzes"))
+
+    token = request.form.get("csrf_token", "")
+    if not secrets.compare_digest(token, session.get("attempt_csrf_token", "")):
+        abort(400, description="Invalid or missing form token. Reload the question and try again.")
+
+    try:
+        question_number = int(request.form.get("question_number", ""))
+    except ValueError:
+        abort(400, description="Invalid question number.")
+
+    question_ids = attempt["question_ids"]
+    if question_number < 1 or question_number > len(question_ids):
+        abort(400, description="Invalid question number.")
+
+    answer_values = request.form.getlist("answer")
+    if len(answer_values) > 1:
+        abort(400, description="Submit at most one answer for the current question.")
+    answer = answer_values[0].strip().upper() if answer_values else ""
+    if answer and answer not in {"A", "B", "C", "D"}:
+        abort(400, description="Select one of the available answer options.")
+
+    answers = dict(attempt["answers"])
+    current_question_id = str(question_ids[question_number - 1])
+    if answer:
+        answers[current_question_id] = answer
+    else:
+        answers.pop(current_question_id, None)
+
+    token_id = attempt.get("submission_token")
+    if not isinstance(token_id, str) or not token_id:
+        abort(400, description="This attempt cannot be submitted. Start a new quiz.")
+
+    with _SUBMISSION_LOCK:
+        if token_id in _SUBMITTED_ATTEMPTS:
+            session.pop("attempt", None)
+            flash("This quiz attempt has already been submitted.", "info")
+            return redirect(url_for("quizzes"))
+
+        quiz_id = attempt["quiz_id"]
+        quiz = database.get_quiz_by_id(quiz_id)
+        if quiz is None:
+            session.pop("attempt", None)
+            return render_template("not_found.html"), 404
+
+        questions = database.get_questions_by_quiz(quiz_id)
+        if [question["id"] for question in questions] != question_ids:
+            session.pop("attempt", None)
+            abort(409, description="Quiz questions changed during this attempt. Start the quiz again.")
+        if not questions:
+            session.pop("attempt", None)
+            abort(409, description="The quiz no longer has any questions.")
+
+        score = sum(
+            question["marks"]
+            for question in questions
+            if answers.get(str(question["id"])) == question["correct_option"]
+        )
+        total_marks = sum(question["marks"] for question in questions)
+        percentage = round(score / total_marks * 100 if total_marks > 0 else 0, 2)
+        status = "Passed" if percentage >= float(quiz["pass_percentage"]) else "Failed"
+
+        database.save_attempt(
+            student_name=attempt["student_name"],
+            student_roll=attempt["student_roll"],
+            quiz_id=quiz_id,
+            score=score,
+            total_marks=total_marks,
+            percentage=percentage,
+            status=status,
+        )
+        _SUBMITTED_ATTEMPTS[token_id] = None
+        _SUBMITTED_ATTEMPTS.move_to_end(token_id)
+        if len(_SUBMITTED_ATTEMPTS) > _MAX_REMEMBERED_SUBMISSIONS:
+            _SUBMITTED_ATTEMPTS.popitem(last=False)
+
+    session.pop("attempt", None)
+    flash(
+        f"Quiz graded and saved: {score} of {total_marks} marks "
+        f"({percentage:.2f}%). {status}.",
+        "success",
+    )
+    return redirect(url_for("quizzes"))
 
 @app.route("/results")
 def results_placeholder():
