@@ -669,6 +669,31 @@ body {
     margin-bottom: 24px;
 }
 
+.quiz-details-list {
+    display: grid;
+    gap: 12px;
+    margin: 0 auto 24px;
+    max-width: 360px;
+    text-align: left;
+}
+
+.quiz-details-list > div {
+    display: flex;
+    justify-content: space-between;
+    gap: 16px;
+    border-bottom: 1px solid var(--border-color);
+    padding-bottom: 8px;
+}
+
+.quiz-details-list dt {
+    color: var(--text-secondary);
+}
+
+.quiz-details-list dd {
+    color: var(--text-primary);
+    font-weight: 700;
+}
+
 /* --------------------------------------------------------------------------
    9. Buttons, Badges & Alerts
    -------------------------------------------------------------------------- */

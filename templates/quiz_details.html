@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+
+{% block title %}{{ quiz.title }} - Quiz Details{% endblock %}
+
+{% block content %}
+<div class="placeholder-page-container">
+    <section class="placeholder-box">
+        <h1 class="placeholder-title">{{ quiz.title }}</h1>
+        {% if quiz.description %}
+        <p class="placeholder-text">{{ quiz.description }}</p>
+        {% endif %}
+        <dl class="quiz-details-list">
+            <div>
+                <dt>Available questions</dt>
+                <dd>{{ question_count }}</dd>
+            </div>
+            <div>
+                <dt>Time limit</dt>
+                <dd>{{ quiz.time_limit_mins }} minutes</dd>
+            </div>
+            <div>
+                <dt>Pass mark</dt>
+                <dd>{{ quiz.pass_percentage }}%</dd>
+            </div>
+        </dl>
+        {% if question_count == 0 %}
+        <p class="placeholder-alert">This quiz cannot be started because it has no questions.</p>
+        {% endif %}
+        <div class="placeholder-actions">
+            <a href="{{ url_for('quizzes') }}" class="btn btn-outline">&larr; All quizzes</a>
+        </div>
+    </section>
+</div>
+{% endblock %}

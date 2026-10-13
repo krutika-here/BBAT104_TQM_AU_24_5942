@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+
+{% block title %}Available Quizzes - Online Quiz System{% endblock %}
+
+{% block content %}
+<div class="dashboard-container">
+    <section class="modules-section">
+        <div>
+            <h1 class="section-title">Available Quizzes</h1>
+            <p class="module-text">Choose a quiz to review its details and question count.</p>
+        </div>
+
+        {% if quizzes %}
+        <div class="modules-grid">
+            {% for quiz in quizzes %}
+            <article class="module-card">
+                <div class="module-header">
+                    <h2 class="module-name">{{ quiz.title }}</h2>
+                </div>
+                {% if quiz.description %}
+                <p class="module-text">{{ quiz.description }}</p>
+                {% endif %}
+                <p class="module-text">
+                    {{ quiz.question_count }} questions
+                    &middot; {{ quiz.time_limit_mins }} minutes
+                    &middot; Pass mark {{ quiz.pass_percentage }}%
+                </p>
+                <div class="module-footer">
+                    <a href="{{ url_for('quiz_details', quiz_id=quiz.id) }}" class="btn btn-sm btn-outline">
+                        Quiz details &rarr;
+                    </a>
+                </div>
+            </article>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="placeholder-box">
+            <h2 class="placeholder-title">No quizzes available</h2>
+            <p class="placeholder-text">There are currently no quizzes in the database.</p>
+        </div>
+        {% endif %}
+    </section>
+</div>
+{% endblock %}

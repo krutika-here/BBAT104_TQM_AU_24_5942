@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+
+{% block title %}Quiz Not Found - Online Quiz System{% endblock %}
+
+{% block content %}
+<div class="placeholder-page-container">
+    <section class="placeholder-box">
+        <h1 class="placeholder-title">Quiz not found</h1>
+        <p class="placeholder-text">The requested quiz does not exist or is no longer available.</p>
+        <div class="placeholder-actions">
+            <a href="{{ url_for('quizzes') }}" class="btn btn-primary">Browse quizzes</a>
+        </div>
+    </section>
+</div>
+{% endblock %}

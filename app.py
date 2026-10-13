@@ -9,6 +9,8 @@ Phase: Phase 2 - Flask Website Shell Only
 import os
 from flask import Flask, render_template
 
+import database
+
 # Initialize Flask application
 app = Flask(__name__)
 app.secret_key = os.environ.get("FLASK_SECRET_KEY", "bbat104-tqm-quiz-system-dev-key")
@@ -23,13 +25,23 @@ def index():
     return render_template("index.html")
 
 @app.route("/quizzes")
-def quizzes_placeholder():
-    """Placeholder view for Quizzes module (scheduled for Phase 3/5)."""
+def quizzes():
+    """List quizzes available in the existing SQLite database."""
+    return render_template("quizzes.html", quizzes=database.get_all_quizzes())
+
+
+@app.route("/quizzes/<int:quiz_id>")
+def quiz_details(quiz_id):
+    """Show quiz metadata and its current available question count."""
+    quiz = database.get_quiz_by_id(quiz_id)
+    if quiz is None:
+        return render_template("not_found.html"), 404
+
+    questions = database.get_questions_by_quiz(quiz_id)
     return render_template(
-        "placeholder.html",
-        module_title="Quiz Catalog & Examination Portal",
-        phase_info="Scheduled for Phase 3 (Student Engine) and Phase 5 (Admin CRUD)",
-        description="The live quiz taking engine, question pre-caching, and CRUD management will be activated here in upcoming phases."
+        "quiz_details.html",
+        quiz=quiz,
+        question_count=len(questions),
     )
 
 @app.route("/results")
