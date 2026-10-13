@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+
+{% block title %}Quiz Result - Online Quiz System{% endblock %}
+
+{% block content %}
+<div class="placeholder-page-container">
+    <section class="placeholder-box result-card">
+        <span class="placeholder-icon" aria-hidden="true">{% if result.status == "Passed" %}✓{% else %}◎{% endif %}</span>
+        <h1 class="placeholder-title">Quiz result</h1>
+        <p class="result-quiz-title">{{ result.quiz_title }}</p>
+        <span class="badge {% if result.status == 'Passed' %}badge-success{% else %}badge-warning{% endif %} result-status">
+            {{ result.status }}
+        </span>
+        {% if result.timed_out %}
+        <p class="result-timeout" role="status">Time expired. Your answers saved before the deadline were graded.</p>
+        {% else %}
+        <p class="result-submission-status">Submission complete. Your attempt was graded and saved.</p>
+        {% endif %}
+
+        <dl class="result-score-list">
+            <div>
+                <dt>Score</dt>
+                <dd>{{ result.score }} / {{ result.total_marks }}</dd>
+            </div>
+            <div>
+                <dt>Percentage</dt>
+                <dd>{{ "%.2f"|format(result.percentage) }}%</dd>
+            </div>
+            <div>
+                <dt>Outcome</dt>
+                <dd>{{ result.status }}</dd>
+            </div>
+        </dl>
+
+        <p class="result-privacy-note">
+            This one-time result is available only in this browser session. Student identity is self-reported;
+            the system does not provide authenticated student accounts or persistent per-student history.
+        </p>
+        <div class="placeholder-actions">
+            <a href="{{ url_for('quizzes') }}" class="btn btn-primary">Return to quiz catalogue</a>
+        </div>
+    </section>
+</div>
+{% endblock %}

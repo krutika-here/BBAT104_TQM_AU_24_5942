@@ -758,6 +758,72 @@ body {
     color: var(--danger);
 }
 
+.result-card {
+    width: min(100%, 620px);
+}
+
+.result-card .placeholder-icon {
+    color: var(--primary);
+    font-size: 38px;
+    font-weight: 800;
+}
+
+.result-quiz-title {
+    color: var(--text-secondary);
+    font-size: 17px;
+    font-weight: 700;
+    margin-bottom: 14px;
+}
+
+.result-status {
+    font-size: 14px;
+    padding: 6px 14px;
+}
+
+.result-submission-status,
+.result-timeout {
+    color: var(--text-secondary);
+    margin: 14px 0;
+}
+
+.result-timeout {
+    color: var(--warning);
+    font-weight: 600;
+}
+
+.result-score-list {
+    display: grid;
+    gap: 10px;
+    margin: 24px auto;
+    max-width: 360px;
+    text-align: left;
+}
+
+.result-score-list > div {
+    display: flex;
+    justify-content: space-between;
+    gap: 16px;
+    border-bottom: 1px solid var(--border-color);
+    padding: 8px 0;
+}
+
+.result-score-list dt {
+    color: var(--text-secondary);
+}
+
+.result-score-list dd {
+    color: var(--text-primary);
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+}
+
+.result-privacy-note {
+    color: var(--text-muted);
+    font-size: 12px;
+    margin: 16px auto 24px;
+    max-width: 480px;
+}
+
 .quiz-answer-form {
     margin-top: 24px;
 }

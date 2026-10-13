@@ -247,7 +247,8 @@ class FlaskApplicationTests(unittest.TestCase):
         with patch("app.time.time", return_value=1721):
             response = self.client.get("/attempt/question/2", follow_redirects=True)
 
-        self.assertIn(b"Time expired. Your saved answers were graded", response.data)
+        self.assertIn(b"Time expired. Your answers saved before the deadline were graded", response.data)
+        self.assertIn(b"2 / 3", response.data)
         self.assertEqual(self._stored_attempt()[0][3:], (2, 3, 66.67, "Passed"))
 
     def test_changed_answer_is_saved_before_deadline_and_graded_on_expiry(self):
@@ -260,6 +261,7 @@ class FlaskApplicationTests(unittest.TestCase):
             response = self.client.get("/attempt/question/1", follow_redirects=True)
 
         self.assertIn(b"Time expired.", response.data)
+        self.assertIn(b"2 / 3", response.data)
         self.assertEqual(self._stored_attempt()[0][3:], (2, 3, 66.67, "Passed"))
 
     def test_answer_autosave_rejects_expired_or_invalid_answer(self):
@@ -313,7 +315,8 @@ class FlaskApplicationTests(unittest.TestCase):
                 follow_redirects=True,
             )
 
-        self.assertIn(b"Time expired. Your saved answers were graded", response.data)
+        self.assertIn(b"Time expired. Your answers saved before the deadline were graded", response.data)
+        self.assertIn(b"2 / 3", response.data)
         self.assertEqual(self._stored_attempt()[0][3:], (2, 3, 66.67, "Passed"))
 
     def test_expired_page_replay_does_not_save_duplicate_attempt(self):
@@ -338,7 +341,7 @@ class FlaskApplicationTests(unittest.TestCase):
                 follow_redirects=True,
             )
 
-        self.assertIn(b"Time expired.", first.data)
+        self.assertIn(b"Time expired. Your answers saved before the deadline were graded", first.data)
         self.assertIn(b"already been submitted", second.data)
         self.assertEqual(len(self._stored_attempt()), 1)
 
@@ -408,7 +411,13 @@ class FlaskApplicationTests(unittest.TestCase):
         self._answer_and_next("A", 1)
 
         result = self._submit_quiz(answer="D", question_number=2)
-        self.assertIn(b"3 of 3 marks (100.00%). Passed.", result.data)
+        self.assertIn(b"Fixture Quiz", result.data)
+        self.assertIn(b"3 / 3", result.data)
+        self.assertIn(b"100.00%", result.data)
+        self.assertIn(b"Submission complete. Your attempt was graded and saved.", result.data)
+        self.assertIn(b"Passed", result.data)
+        self.assertNotIn(b"Test Student", result.data)
+        self.assertNotIn(b"TEST-1", result.data)
         self.assertEqual(
             self._stored_attempt(),
             [("Test Student", "TEST-1", 41, 3, 3, 100.0, "Passed")],
@@ -419,7 +428,9 @@ class FlaskApplicationTests(unittest.TestCase):
         self._answer_and_next("B", 1)
 
         result = self._submit_quiz(answer="B", question_number=2)
-        self.assertIn(b"0 of 3 marks (0.00%). Failed.", result.data)
+        self.assertIn(b"0 / 3", result.data)
+        self.assertIn(b"0.00%", result.data)
+        self.assertIn(b"Failed", result.data)
         self.assertEqual(self._stored_attempt()[0][3:], (0, 3, 0.0, "Failed"))
 
     def test_unanswered_question_receives_no_marks(self):
@@ -427,8 +438,31 @@ class FlaskApplicationTests(unittest.TestCase):
         self._answer_and_next("A", 1)
 
         result = self._submit_quiz(question_number=2)
-        self.assertIn(b"2 of 3 marks (66.67%). Passed.", result.data)
+        self.assertIn(b"2 / 3", result.data)
+        self.assertIn(b"66.67%", result.data)
+        self.assertIn(b"Passed", result.data)
         self.assertEqual(self._stored_attempt()[0][3:], (2, 3, 66.67, "Passed"))
+
+    def test_result_token_is_one_time_and_unknown_tokens_are_not_found(self):
+        self._start_attempt()
+        submission = self._submit_quiz(answer="A", follow_redirects=False)
+        self.assertEqual(submission.status_code, 302)
+        valid_url = submission.location
+        self.assertTrue(valid_url.startswith("/attempt/result/"))
+        response = self.client.get(valid_url)
+        self.assertEqual(response.status_code, 200)
+        self.assertIn(b"Return to quiz catalogue", response.data)
+        self.assertEqual(self.client.get(valid_url).status_code, 404)
+        self.assertEqual(self.client.get("/attempt/result/unknown").status_code, 404)
+
+    def test_another_session_cannot_access_a_result_token(self):
+        self._start_attempt()
+        submission = self._submit_quiz(answer="A", follow_redirects=False)
+        result_url = submission.location
+
+        other_session = app.test_client()
+        response = other_session.get(result_url)
+        self.assertEqual(response.status_code, 404)
 
     def test_invalid_submission_is_rejected_without_saving_attempt(self):
         self._start_attempt()
@@ -466,7 +500,7 @@ class FlaskApplicationTests(unittest.TestCase):
         duplicate_client.set_cookie(app.config["SESSION_COOKIE_NAME"], stale_cookie.value)
 
         first = self._submit_quiz(answer="A", csrf_token=csrf_token)
-        self.assertIn(b"Quiz graded and saved", first.data)
+        self.assertIn(b"Submission complete. Your attempt was graded and saved.", first.data)
         duplicate = self._submit_quiz(
             answer="A",
             client=duplicate_client,

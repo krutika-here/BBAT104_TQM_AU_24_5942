@@ -83,19 +83,29 @@ def finalize_quiz_attempt(attempt, answers, timed_out=False):
             _SUBMITTED_ATTEMPTS.popitem(last=False)
 
     session.pop("attempt", None)
-    if timed_out:
-        flash(
-            f"Time expired. Your saved answers were graded: {score} of "
-            f"{total_marks} marks ({percentage:.2f}%). {status}.",
-            "warning",
-        )
-    else:
-        flash(
-            f"Quiz graded and saved: {score} of {total_marks} marks "
-            f"({percentage:.2f}%). {status}.",
-            "success",
-        )
-    return redirect(url_for("quizzes"))
+    result_token = secrets.token_urlsafe(32)
+    session["pending_result"] = {
+        "token": result_token,
+        "quiz_title": quiz["title"],
+        "score": score,
+        "total_marks": total_marks,
+        "percentage": percentage,
+        "status": status,
+        "timed_out": timed_out,
+    }
+    return redirect(url_for("attempt_result", result_token=result_token))
+
+
+@app.route("/attempt/result/<result_token>")
+def attempt_result(result_token):
+    """Display and consume a result belonging only to the current session."""
+    result = session.get("pending_result")
+    token = result.get("token", "") if isinstance(result, dict) else ""
+    if not isinstance(token, str) or not secrets.compare_digest(token, result_token):
+        abort(404)
+
+    session.pop("pending_result", None)
+    return render_template("attempt_result.html", result=result)
 
 
 @app.route("/")
