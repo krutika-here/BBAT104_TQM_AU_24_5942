@@ -25,6 +25,19 @@
         </dl>
         {% if question_count == 0 %}
         <p class="placeholder-alert">This quiz cannot be started because it has no questions.</p>
+        {% else %}
+        <form method="post" action="{{ url_for('start_quiz', quiz_id=quiz.id) }}" class="quiz-start-form">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+            <p class="module-text">Identity is self-reported for this attempt; the site does not authenticate students.</p>
+            <label for="student_name">Your name</label>
+            <input id="student_name" name="student_name" type="text" maxlength="100" required autocomplete="name">
+            <label for="student_roll">Roll / registration number</label>
+            <input id="student_roll" name="student_roll" type="text" maxlength="50" required autocomplete="off">
+            {% if error %}
+            <p class="form-error" role="alert">{{ error }}</p>
+            {% endif %}
+            <button type="submit" class="btn btn-primary">Start quiz</button>
+        </form>
         {% endif %}
         <div class="placeholder-actions">
             <a href="{{ url_for('quizzes') }}" class="btn btn-outline">&larr; All quizzes</a>

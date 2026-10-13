@@ -1,4 +1,5 @@
 import os
+import re
 import sqlite3
 import tempfile
 import unittest
@@ -113,6 +114,85 @@ class FlaskApplicationTests(unittest.TestCase):
 
         self.assertEqual(response.status_code, 404)
         self.assertIn(b"Quiz not found", response.data)
+
+    def _csrf_token(self):
+        response = self.client.get("/quizzes/41")
+        return re.search(rb'name="csrf_token" value="([^"]+)"', response.data).group(1).decode()
+
+    def _start_attempt(self, quiz_id=41, student_name="Test Student", student_roll="TEST-1"):
+        return self.client.post(
+            f"/quizzes/{quiz_id}/start",
+            data={
+                "csrf_token": self._csrf_token(),
+                "student_name": student_name,
+                "student_roll": student_roll,
+            },
+        )
+
+    def test_start_requires_self_reported_identity_and_valid_form_token(self):
+        response = self.client.post("/quizzes/41/start", data={"student_name": "Student"})
+        self.assertEqual(response.status_code, 400)
+
+        response = self._start_attempt(student_name="  ", student_roll="TEST-1")
+        self.assertEqual(response.status_code, 400)
+        self.assertIn(b"Enter both your name and roll number", response.data)
+
+    def test_start_rejects_unknown_or_empty_quiz(self):
+        response = self.client.post("/quizzes/999/start", data={})
+        self.assertEqual(response.status_code, 404)
+
+        response = self._start_attempt(quiz_id=42)
+        self.assertEqual(response.status_code, 400)
+        self.assertIn(b"has no questions", response.data)
+
+    def test_quiz_question_navigation_saves_and_restores_answers(self):
+        response = self._start_attempt()
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(response.location, "/attempt/question/1")
+
+        response = self.client.get("/attempt/question/1")
+        self.assertEqual(response.status_code, 200)
+        self.assertIn(b"Fixture question one?", response.data)
+        self.assertNotIn(b"correct_option", response.data)
+
+        csrf_token = re.search(
+            rb'name="csrf_token" value="([^"]+)"', response.data
+        ).group(1).decode()
+        response = self.client.post(
+            "/attempt/question/1",
+            data={"csrf_token": csrf_token, "answer": "A", "action": "next"},
+        )
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(response.location, "/attempt/question/2")
+
+        response = self.client.get("/attempt/question/2")
+        self.assertEqual(response.status_code, 200)
+        self.assertIn(b"Fixture question two?", response.data)
+
+        csrf_token = re.search(
+            rb'name="csrf_token" value="([^"]+)"', response.data
+        ).group(1).decode()
+        response = self.client.post(
+            "/attempt/question/2",
+            data={"csrf_token": csrf_token, "answer": "D", "action": "previous"},
+        )
+        self.assertEqual(response.status_code, 302)
+        response = self.client.get("/attempt/question/1")
+        self.assertIn(b'value="A" checked', response.data)
+
+    def test_question_navigation_rejects_invalid_answer_and_question_number(self):
+        self._start_attempt()
+        response = self.client.get("/attempt/question/1")
+        csrf_token = re.search(
+            rb'name="csrf_token" value="([^"]+)"', response.data
+        ).group(1).decode()
+
+        response = self.client.post(
+            "/attempt/question/1",
+            data={"csrf_token": csrf_token, "answer": "X", "action": "next"},
+        )
+        self.assertEqual(response.status_code, 400)
+        self.assertEqual(self.client.get("/attempt/question/0").status_code, 404)
 
 
 if __name__ == "__main__":

@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+
+{% block title %}{{ quiz.title }} - Question {{ question_number }}{% endblock %}
+
+{% block content %}
+<div class="dashboard-container">
+    <section class="goal-roadmap-card quiz-question-card">
+        <div class="quiz-question-header">
+            <div>
+                <h1 class="section-title">{{ quiz.title }}</h1>
+                <p class="module-text">Question {{ question_number }} of {{ question_count }} &middot; {{ question.marks }} mark(s)</p>
+            </div>
+            <p class="quiz-time-limit">Time limit: {{ quiz.time_limit_mins }} minutes</p>
+        </div>
+
+        <form method="post" class="quiz-answer-form">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+            <fieldset>
+                <legend>{{ question.question_text }}</legend>
+                {% for letter, text in [
+                    ('A', question.option_a),
+                    ('B', question.option_b),
+                    ('C', question.option_c),
+                    ('D', question.option_d)
+                ] %}
+                <label class="quiz-answer-option">
+                    <input type="radio" name="answer" value="{{ letter }}" {% if selected_answer == letter %}checked{% endif %}>
+                    <span><strong>{{ letter }}.</strong> {{ text }}</span>
+                </label>
+                {% endfor %}
+            </fieldset>
+            <div class="quiz-navigation">
+                {% if question_number > 1 %}
+                <button type="submit" name="action" value="previous" class="btn btn-outline" accesskey="p">Previous</button>
+                {% else %}
+                <span></span>
+                {% endif %}
+                <button type="submit" name="action" value="next" class="btn btn-primary" accesskey="n"
+                    {% if question_number == question_count %}disabled{% endif %}>Next</button>
+            </div>
+        </form>
+        <p class="quiz-shortcut-help">Keyboard: Alt+P for previous, Alt+N for next. You can change an answer at any time before submission.</p>
+    </section>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.addEventListener("keydown", function (event) {
+        if (!event.altKey || event.ctrlKey || event.metaKey) {
+            return;
+        }
+        const action = event.key.toLowerCase() === "p" ? "previous"
+            : event.key.toLowerCase() === "n" ? "next"
+            : null;
+        if (!action) {
+            return;
+        }
+        const button = document.querySelector(`button[name="action"][value="${action}"]:not(:disabled)`);
+        if (button) {
+            event.preventDefault();
+            button.click();
+        }
+    });
+</script>
+{% endblock %}
