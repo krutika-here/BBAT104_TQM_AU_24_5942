@@ -10,10 +10,20 @@
                 <h1 class="section-title">{{ quiz.title }}</h1>
                 <p class="module-text">Question {{ question_number }} of {{ question_count }} &middot; {{ question.marks }} mark(s)</p>
             </div>
-            <p class="quiz-time-limit">Time limit: {{ quiz.time_limit_mins }} minutes</p>
+            <div class="quiz-timer"
+                 role="timer"
+                 aria-label="Time remaining"
+                 aria-live="off"
+                 data-deadline-ms="{{ deadline_ms }}">
+                <span class="quiz-timer-label">Time remaining</span>
+                <span class="quiz-timer-value">{{ quiz.time_limit_mins }}:00</span>
+            </div>
         </div>
 
-        <form method="post" class="quiz-answer-form">
+        <form id="quizAnswerForm"
+              method="post"
+              class="quiz-answer-form"
+              data-answer-url="{{ url_for('save_attempt_answer') }}">
             <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
             <input type="hidden" name="question_number" value="{{ question_number }}">
             <fieldset>
@@ -41,19 +51,100 @@
                         {% if question_number == question_count %}disabled{% endif %}>Next</button>
                     <button type="submit" class="btn btn-submit-quiz"
                         formaction="{{ url_for('submit_quiz') }}"
-                        onclick="return confirm('Submit and grade this quiz now? Unanswered questions receive no marks.')">
+                        onclick="return this.form.dataset.autoSubmitting === 'true' || confirm('Submit and grade this quiz now? Unanswered questions receive no marks.')">
                         Submit quiz
                     </button>
                 </div>
             </div>
         </form>
-        <p class="quiz-shortcut-help">Keyboard: Alt+P for previous, Alt+N for next. You can change an answer at any time before submission.</p>
+        <p id="answerSaveStatus" class="quiz-shortcut-help" role="status" aria-live="polite"></p>
+        <p class="quiz-shortcut-help">Keyboard: Alt+P for previous, Alt+N for next. The server enforces the configured deadline; the browser countdown is a convenience and is not tamper-proof by itself.</p>
     </section>
 </div>
 {% endblock %}
 
 {% block scripts %}
 <script>
+    (function () {
+        "use strict";
+        const timer = document.querySelector(".quiz-timer");
+        const form = document.getElementById("quizAnswerForm");
+        const submitButton = form.querySelector(".btn-submit-quiz");
+        const timerValue = timer.querySelector(".quiz-timer-value");
+        const saveStatus = document.getElementById("answerSaveStatus");
+        const deadline = Number(timer.dataset.deadlineMs);
+        let submissionStarted = false;
+        let expirationTriggered = false;
+        let answerSavePromise = Promise.resolve();
+        let answerSaveSequence = 0;
+
+        for (const radio of form.querySelectorAll('input[name="answer"]')) {
+            radio.addEventListener("change", function () {
+                const sequence = ++answerSaveSequence;
+                const body = new URLSearchParams({
+                    csrf_token: form.elements.csrf_token.value,
+                    question_number: form.elements.question_number.value,
+                    answer: radio.value
+                });
+                answerSavePromise = answerSavePromise
+                    .then(() => fetch(form.dataset.answerUrl, {
+                        method: "POST",
+                        credentials: "same-origin",
+                        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+                        body
+                    }))
+                    .then(response => {
+                        if (!response.ok) {
+                            throw new Error("Answer could not be saved before the deadline.");
+                        }
+                        if (sequence === answerSaveSequence) {
+                            saveStatus.textContent = "Answer saved.";
+                        }
+                    })
+                    .catch(() => {
+                        if (sequence === answerSaveSequence) {
+                            saveStatus.textContent = "Answer not saved. Check your connection or submit before time expires.";
+                        }
+                    });
+            });
+        }
+
+        function updateTimer() {
+            const remaining = Math.max(0, Math.ceil((deadline - Date.now()) / 1000));
+            const minutes = Math.floor(remaining / 60);
+            const seconds = remaining % 60;
+            timerValue.textContent = `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
+            timer.classList.toggle("quiz-timer-urgent", remaining <= 60);
+
+            if (remaining === 0 && !submissionStarted && !expirationTriggered) {
+                expirationTriggered = true;
+                saveStatus.textContent = "Time expired. Submitting saved answers.";
+                answerSavePromise.then(() => {
+                    if (!submissionStarted) {
+                        form.dataset.autoSubmitting = "true";
+                        form.requestSubmit(submitButton);
+                    }
+                });
+            }
+        }
+
+        form.addEventListener("submit", function (event) {
+            if (submissionStarted) {
+                event.preventDefault();
+                return;
+            }
+            submissionStarted = true;
+            for (const button of form.querySelectorAll("button")) {
+                if (button !== event.submitter) {
+                    button.disabled = true;
+                }
+            }
+        });
+
+        updateTimer();
+        window.setInterval(updateTimer, 250);
+    })();
+
     document.addEventListener("keydown", function (event) {
         if (!event.altKey || event.ctrlKey || event.metaKey) {
             return;

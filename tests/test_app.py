@@ -3,6 +3,7 @@ import re
 import sqlite3
 import tempfile
 import unittest
+from unittest.mock import patch
 
 import database
 from app import app
@@ -140,6 +141,20 @@ class FlaskApplicationTests(unittest.TestCase):
             },
         )
 
+    def _save_answer(self, answer, question_number=1):
+        page = self.client.get(f"/attempt/question/{question_number}")
+        csrf_token = re.search(
+            rb'name="csrf_token" value="([^"]+)"', page.data
+        ).group(1).decode()
+        return self.client.post(
+            "/attempt/answer",
+            data={
+                "csrf_token": csrf_token,
+                "question_number": str(question_number),
+                "answer": answer,
+            },
+        )
+
     def test_start_requires_self_reported_identity_and_valid_form_token(self):
         response = self.client.post("/quizzes/41/start", data={"student_name": "Student"})
         self.assertEqual(response.status_code, 400)
@@ -155,6 +170,24 @@ class FlaskApplicationTests(unittest.TestCase):
         response = self._start_attempt(quiz_id=42)
         self.assertEqual(response.status_code, 400)
         self.assertIn(b"has no questions", response.data)
+
+    def test_start_rejects_missing_or_nonpositive_time_limit(self):
+        with sqlite3.connect(database.DB_PATH) as connection:
+            connection.execute(
+                "UPDATE quizzes SET time_limit_mins = NULL WHERE id = 41"
+            )
+
+        response = self._start_attempt()
+        self.assertEqual(response.status_code, 409)
+        self.assertIn(b"no valid configured time limit", response.data)
+
+        with sqlite3.connect(database.DB_PATH) as connection:
+            connection.execute(
+                "UPDATE quizzes SET time_limit_mins = 0 WHERE id = 41"
+            )
+
+        response = self._start_attempt()
+        self.assertEqual(response.status_code, 409)
 
     def test_quiz_question_navigation_saves_and_restores_answers(self):
         response = self._start_attempt()
@@ -190,6 +223,124 @@ class FlaskApplicationTests(unittest.TestCase):
         self.assertEqual(response.status_code, 302)
         response = self.client.get("/attempt/question/1")
         self.assertIn(b'value="A" checked', response.data)
+
+    def test_question_page_displays_database_configured_deadline(self):
+        with patch("app.time.time", return_value=1000):
+            response = self._start_attempt()
+            self.assertEqual(response.status_code, 302)
+            question = self.client.get("/attempt/question/1")
+
+        self.assertEqual(question.status_code, 200)
+        self.assertIn(b'Time remaining', question.data)
+        self.assertIn(b'data-deadline-ms="1720000"', question.data)
+        self.assertIn(b'12:00', question.data)
+        self.assertIn(b'data-answer-url="/attempt/answer"', question.data)
+        self.assertIn(b"Date.now()", question.data)
+        self.assertIn(b"requestSubmit", question.data)
+        self.assertIn(b"server enforces the configured deadline", question.data)
+
+    def test_expired_attempt_is_automatically_graded_from_saved_answers(self):
+        with patch("app.time.time", return_value=1000):
+            self._start_attempt()
+            self._answer_and_next("A", 1)
+
+        with patch("app.time.time", return_value=1721):
+            response = self.client.get("/attempt/question/2", follow_redirects=True)
+
+        self.assertIn(b"Time expired. Your saved answers were graded", response.data)
+        self.assertEqual(self._stored_attempt()[0][3:], (2, 3, 66.67, "Passed"))
+
+    def test_changed_answer_is_saved_before_deadline_and_graded_on_expiry(self):
+        with patch("app.time.time", return_value=1000):
+            self._start_attempt()
+            response = self._save_answer("A")
+            self.assertEqual(response.status_code, 204)
+
+        with patch("app.time.time", return_value=1721):
+            response = self.client.get("/attempt/question/1", follow_redirects=True)
+
+        self.assertIn(b"Time expired.", response.data)
+        self.assertEqual(self._stored_attempt()[0][3:], (2, 3, 66.67, "Passed"))
+
+    def test_answer_autosave_rejects_expired_or_invalid_answer(self):
+        with patch("app.time.time", return_value=1000):
+            self._start_attempt()
+            page = self.client.get("/attempt/question/1")
+            csrf_token = re.search(
+                rb'name="csrf_token" value="([^"]+)"', page.data
+            ).group(1).decode()
+
+        response = self.client.post(
+            "/attempt/answer",
+            data={
+                "csrf_token": csrf_token,
+                "question_number": "1",
+                "answer": "X",
+            },
+        )
+        self.assertEqual(response.status_code, 400)
+
+        with patch("app.time.time", return_value=1721):
+            response = self.client.post(
+                "/attempt/answer",
+                data={
+                    "csrf_token": csrf_token,
+                    "question_number": "1",
+                    "answer": "A",
+                },
+            )
+
+        self.assertEqual(response.status_code, 410)
+        self.assertEqual(self._stored_attempt(), [])
+
+    def test_late_answer_is_ignored_after_server_deadline(self):
+        with patch("app.time.time", return_value=1000):
+            self._start_attempt()
+            self._answer_and_next("A", 1)
+            page = self.client.get("/attempt/question/2")
+            csrf_token = re.search(
+                rb'name="csrf_token" value="([^"]+)"', page.data
+            ).group(1).decode()
+
+        with patch("app.time.time", return_value=1721):
+            response = self.client.post(
+                "/attempt/submit",
+                data={
+                    "csrf_token": csrf_token,
+                    "question_number": "2",
+                    "answer": "D",
+                },
+                follow_redirects=True,
+            )
+
+        self.assertIn(b"Time expired. Your saved answers were graded", response.data)
+        self.assertEqual(self._stored_attempt()[0][3:], (2, 3, 66.67, "Passed"))
+
+    def test_expired_page_replay_does_not_save_duplicate_attempt(self):
+        with patch("app.time.time", return_value=1000):
+            self._start_attempt()
+            page = self.client.get("/attempt/question/1")
+            csrf_token = re.search(
+                rb'name="csrf_token" value="([^"]+)"', page.data
+            ).group(1).decode()
+            stale_cookie = self.client.get_cookie(app.config["SESSION_COOKIE_NAME"])
+
+        with patch("app.time.time", return_value=1721):
+            first = self.client.get("/attempt/question/1", follow_redirects=True)
+            duplicate_client = app.test_client()
+            duplicate_client.set_cookie(
+                app.config["SESSION_COOKIE_NAME"],
+                stale_cookie.value,
+            )
+            second = duplicate_client.post(
+                "/attempt/submit",
+                data={"csrf_token": csrf_token, "question_number": "1"},
+                follow_redirects=True,
+            )
+
+        self.assertIn(b"Time expired.", first.data)
+        self.assertIn(b"already been submitted", second.data)
+        self.assertEqual(len(self._stored_attempt()), 1)
 
     def test_question_navigation_rejects_invalid_answer_and_question_number(self):
         self._start_attempt()
