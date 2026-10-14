@@ -63,12 +63,104 @@ class FlaskApplicationTests(unittest.TestCase):
         response = self.client.get("/")
 
         self.assertEqual(response.status_code, 200)
-        self.assertIn(b"Online Quiz System", response.data)
-        self.assertIn(b"Dashboard", response.data)
+        self.assertIn(b"Welcome to the Online Quiz System", response.data)
         self.assertIn(b'href="/quizzes"', response.data)
         self.assertIn(b'href="/results"', response.data)
         self.assertIn(b'href="/reports"', response.data)
         self.assertIn(b'href="/tqm"', response.data)
+
+    def test_dashboard_displays_database_quiz_titles_counts_and_durations(self):
+        response = self.client.get("/")
+
+        self.assertEqual(response.status_code, 200)
+        self.assertIn(b"Fixture Quiz", response.data)
+        self.assertIn(b"2 questions", response.data)
+        self.assertIn(b"12 minutes", response.data)
+        self.assertIn(b"Empty Fixture", response.data)
+        self.assertIn(b"0 questions", response.data)
+        self.assertIn(b"5 minutes", response.data)
+        self.assertRegex(
+            response.data,
+            rb'<span class="stat-label">Available quizzes</span>\s*'
+            rb'<span class="stat-value">2</span>',
+        )
+        self.assertRegex(
+            response.data,
+            rb'<span class="stat-label">Questions in catalogue</span>\s*'
+            rb'<span class="stat-value">2</span>',
+        )
+        self.assertNotIn(b"correct_option", response.data)
+
+    def test_dashboard_omits_quiz_duration_when_not_configured(self):
+        with sqlite3.connect(database.DB_PATH) as connection:
+            connection.execute(
+                "INSERT INTO quizzes (id, title, description, time_limit_mins, pass_percentage) "
+                "VALUES (43, 'No Duration Quiz', '', NULL, 50.0)"
+            )
+
+        response = self.client.get("/")
+
+        self.assertEqual(response.status_code, 200)
+        self.assertIn(b"No Duration Quiz", response.data)
+        self.assertNotIn(b"None minutes", response.data)
+
+    def test_empty_quiz_catalogue_shows_dashboard_empty_state_and_zero_counts(self):
+        with sqlite3.connect(database.DB_PATH) as connection:
+            connection.execute("DELETE FROM quizzes")
+
+        response = self.client.get("/")
+
+        self.assertEqual(response.status_code, 200)
+        self.assertIn(b"No quizzes available", response.data)
+        self.assertIn(b"There are currently no quizzes in the database", response.data)
+        self.assertRegex(
+            response.data,
+            rb'<span class="stat-label">Available quizzes</span>\s*'
+            rb'<span class="stat-value">0</span>',
+        )
+        self.assertRegex(
+            response.data,
+            rb'<span class="stat-label">Questions in catalogue</span>\s*'
+            rb'<span class="stat-value">0</span>',
+        )
+
+    def test_dashboard_quick_navigation_points_to_existing_routes(self):
+        routes = {
+            "/quizzes": b">Quizzes</span>",
+            "/results": b">Results</span>",
+            "/reports": b">Reports</span>",
+            "/tqm": b">TQM Tools</span>",
+        }
+
+        response = self.client.get("/")
+
+        self.assertEqual(response.status_code, 200)
+        for path, label in routes.items():
+            with self.subTest(path=path):
+                self.assertIn(f'href="{path}"'.encode(), response.data)
+                self.assertIn(label, response.data)
+                self.assertEqual(self.client.get(path).status_code, 200)
+
+    def test_dashboard_does_not_expose_private_attempt_data(self):
+        private_name = "Private Attempt Name"
+        private_roll = "PRIVATE-ROLL-93"
+        with sqlite3.connect(database.DB_PATH) as connection:
+            connection.execute(
+                """
+                INSERT INTO attempts (
+                    student_name, student_roll, quiz_id, score, total_marks,
+                    percentage, status
+                ) VALUES (?, ?, 41, 2, 3, 66.67, 'Passed')
+                """,
+                (private_name, private_roll),
+            )
+
+        response = self.client.get("/")
+
+        self.assertEqual(response.status_code, 200)
+        self.assertNotIn(private_name.encode(), response.data)
+        self.assertNotIn(private_roll.encode(), response.data)
+        self.assertIn(b"No personalized progress or recent activity is shown", response.data)
 
     def test_incomplete_modules_are_labeled_as_placeholders(self):
         modules = {

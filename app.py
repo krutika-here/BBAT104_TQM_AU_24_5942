@@ -110,12 +110,15 @@ def attempt_result(result_token):
 
 @app.route("/")
 def index():
-    """
-    Homepage and main interactive dashboard placeholder.
-    In Phase 2, statistics and module entries are clearly presented as placeholders.
-    Database writes and quiz evaluation are explicitly disabled in this phase.
-    """
-    return render_template("index.html")
+    """Show the quiz catalogue and navigation without exposing private attempts."""
+    quizzes = database.get_all_quizzes()
+    question_count = sum(quiz["question_count"] for quiz in quizzes)
+    return render_template(
+        "index.html",
+        quizzes=quizzes,
+        quiz_count=len(quizzes),
+        question_count=question_count,
+    )
 
 @app.route("/quizzes")
 def quizzes():
