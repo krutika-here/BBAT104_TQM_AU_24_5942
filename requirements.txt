@@ -1,6 +1,10 @@
-# BBAT104 Online Quiz System - Web Migration Dependencies
-# Course: BBAT104 Fundamentals of TQM | Reg: AU-24-5942
-# Assigned Quality Goal: Q08 - Improve User Satisfaction
+# BBAT104 Online Quiz System - Web Application Dependencies
+# Course: BBAT104 Fundamentals of TQM | Roll: 39 | Reg: AU-24-5942
+# Assigned Quality Goal: Q04 - Improve Security
 
-# Core Web Framework
+# Core Web Framework and Security Libraries
 Flask>=3.0.0
+Werkzeug>=3.0.0
+
+# Production WSGI Application Server
+gunicorn>=21.2.0

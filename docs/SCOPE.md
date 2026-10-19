@@ -1,206 +1,188 @@
-# Project Scope Definition & Governance Document
+# Project Scope Definition Document
 
-**Project Title:** Online Quiz System  
-**Course Code:** BBAT104 – Fundamentals of Total Quality Management (TQM)  
-**Academic Session:** 2026–27  
+**Project Title:** Secure Online Quiz System  
+**Course Code & Name:** BBAT104 – Fundamentals of Total Quality Management (TQM)  
+**Academic Session:** 2026–2027  
+**Candidate Roll Number:** 39  
 **Candidate Name:** Krutika Agrawal  
-**Roll / Registration Number:** AU-24-5942  
-**Assigned Digit & Baseline System:** Digit 9 – Online Quiz System  
-**Assigned Quality Goal:** Ensure zero latency during submissions & auto-grading  
-**Document Revision:** 1.0 (Review 1 Deliverable – Scope Definition)  
+**University Registration Number:** AU-24-5942  
+**Assigned Topic Digit:** 9 – Online Quiz System  
+**Assigned Quality Goal:** Q04 — Improve Security  
+**Core Objective:** Ensure secure quiz submissions, protect user data, and prevent unauthorized access  
+**Evaluation Scope:** Review 1 (Setup & SRS) and Review 2 (Base System & CRUD)  
+**Document Revision:** 2.0 (Security Scope Definition)  
 
 ---
 
-## 1.0 Executive Scope Summary
+## 1. Project Purpose & Executive Summary
 
-The objective of the **Online Quiz System** project is to design, develop, and benchmark an automated computer-based assessment system that enforces Total Quality Management (TQM) principles across all stages of execution. 
+The purpose of the **Secure Online Quiz System** is to provide an educational computer-based testing environment that embeds strict application security controls into its core architecture. In conventional online examination platforms, insufficient access control, unvalidated input, insecure password recovery, answer key leakage, and lack of audit logging undermine the integrity of academic assessments.
 
-A primary failure mode in modern computer-based examination platforms is **submission latency**—the noticeable lag, buffering, or screen freezing that occurs when candidates submit their examination papers. Under high traffic or unoptimized database operations, latency triggers student anxiety, duplicate submissions, server race conditions, and corrupted attempts.
-
-This project defines clear architectural and functional boundaries to address this defect head-on:
-1. Deliver a fully functioning, locally hosted, high-speed testing application.
-2. Implement **zero-latency submission handling** ($< 20\text{ ms}$ perceived turnaround) via in-memory caching and decoupled asynchronous persistence.
-3. Apply rigorous Statistical Quality Control (SQC) tools, defect tracking checksheets, Failure Mode and Effects Analysis (FMEA), and Deming Plan-Do-Check-Act (PDCA) continuous improvement cycles.
+This project delivers a robust, secure, browser-accessible online quiz application aligned with Total Quality Management (TQM) principles. For the current evaluation phase (**Review 1: Setup & SRS** and **Review 2: Base System & CRUD**), the system establishes complete CRUD capabilities across quizzes, questions, users, and results, reinforced by all five features of the assigned Quality Goal **Q04 — Improve Security**.
 
 ---
 
-## 2.0 In-Scope System Capabilities
+## 2. In-Scope Functionality for Review 1 & Review 2
 
-The following capabilities, modules, and features fall strictly within the implementation boundary of the project:
+The boundaries of the current implementation encompass the following deliverables:
 
-### 2.1 Core CRUD Operations
-* **Quizzes CRUD:**
-  * **Create:** Add new quiz titles, descriptions, configurable time limits (in minutes), and passing cutoff percentages.
-  * **Read:** Display all existing quizzes in an interactive, formatted table alongside question counts and parameters.
-  * **Update:** Modify quiz metadata, duration, or passing standards.
-  * **Delete:** Remove obsolete quizzes with cascade deletion of related questions to eliminate orphaned database records.
-* **Questions CRUD:**
-  * **Create:** Add multiple-choice questions (MCQs) with four options (A, B, C, D), designated correct answer key, and custom mark allocation.
-  * **Read:** Filter and list questions dynamically by parent quiz ID.
-  * **Update:** Edit question stems, choices, marks, or answer keys.
-  * **Delete:** Remove individual questions from a quiz.
+### 2.1 Review 1 Scope (Setup & SRS — 10 Raw Marks)
+* **GitHub Repository Verification & Health:** Active public Git repository (`BBAT104_TQM_AU_24_5942`), branch synchronization, clean commit history exceeding standard milestones, and comprehensive documentation.
+* **System Architecture Flowchart:** Detailed architectural design document (`docs/ARCHITECTURE.md`) with Mermaid flowcharts, sequence diagrams, state transitions, and entity-relationship models depicting security layers, request dispatching, and persistence.
+* **Software Requirements Specification (SRS):** Formal IEEE 830-aligned specification (`docs/SRS.md`) defining unique functional requirements (`FR-xx`), security requirements (`SEC-xx`), non-functional requirements (`NFR-xx`), and acceptance criteria.
+* **Scope Definition Document:** Explicit boundaries, role matrices, CRUD specifications, and exclusions (`docs/SCOPE.md`).
+* **Documentation Alignment:** Fully consistent `README.md` reflecting Roll Number 39, baseline System 9, and Quality Goal Q04.
 
-### 2.2 In-Memory Quiz Delivery & Live Countdown Engine
-* **Pre-cached Question Ingestion:** Fetch all quiz data in a single read transaction upon quiz start and hold it in Python RAM memory structures (`list[dict]`).
-* **Interactive Navigation:** Seamless next/previous question switching with instantaneous state persistence.
-* **Option Selection & Deselection:** Direct radio button selection and "Clear Answer" functionality with immediate hash map updates.
-* **Real-time Non-blocking Countdown Timer:** 1-second interval timer synchronized with the Tkinter event pump, featuring warning indicators and automated zero-latency submission on expiry (`00:00`).
+### 2.2 Review 2 Scope (Base System & CRUD — 15 Raw Marks)
+* **User & Account Management:**
+  * Self-registration for students with default role assignment.
+  * Role-based authentication (Administrator, Quiz Creator / Instructor, Student).
+  * Secure logout and session invalidation.
+* **Quiz Management (CRUD):**
+  * **Create:** Authorized instructors/admins can create new quizzes with titles, descriptions, durations, and passing cutoff percentages.
+  * **Read:** All authenticated and anonymous users can browse available quizzes and details.
+  * **Update:** Authorized instructors/admins can update quiz metadata.
+  * **Delete:** Authorized instructors/admins can delete obsolete quizzes with cascade deletion of questions.
+* **Question & Answer Management (CRUD):**
+  * **Create:** Add multiple-choice questions with 4 distinct options, correct key configuration, and customizable mark allocation.
+  * **Read:** Instructors/admins can view question lists with answer keys. Students taking tests receive question stems and options WITHOUT answer keys.
+  * **Update:** Edit question stems, choices, marks, and correct answer keys.
+  * **Delete:** Remove individual questions safely from quizzes.
+* **Quiz Attempts & Examination Delivery:**
+  * Interactive browser quiz player with question navigation (Next / Previous / Jump).
+  * Non-blocking real-time countdown timer synchronized with server-side deadlines.
+  * Single-use submission token to eliminate duplicate submission race conditions.
+  * Server-side grading engine computing scores and pass/fail statuses.
+  * Private, session-delimited scorecard generation.
+* **Result Management & Gradebook (CRUD):**
+  * Students can read their own historical quiz scores and attempt records.
+  * Instructors and administrators can view global attempt gradebooks with summary pass/fail metrics.
+  * Direct score tampering or unauthorized cross-student result access is strictly prevented.
 
-### 2.3 Zero-Latency Submission & In-Memory Auto-Grading
-* **Poka-Yoke Debounce Lock:** Immediate deactivation of the submission button upon trigger to prevent accidental duplicate submissions.
-* **$O(1)$ Hash Map Answer Evaluation:** Evaluation of student choices against correct keys performed entirely in-memory within CPU registers (measured execution time $< 0.5\text{ ms}$).
-* **Dynamic Score & Outcome Calculation:** Immediate generation of total marks, scored marks, percentage, and passing status (`Passed` / `Failed`).
-* **Instant Scorecard Display:** Visual transition to the scorecard screen in $< 20\text{ ms}$ perceived latency, presenting a full question-by-question breakdown.
-* **Asynchronous Persistence Queue:** Offloading of attempt records to SQLite storage without blocking the UI main thread.
-
-### 2.4 Gradebook & Historical Performance Metrics
-* **Student Results History:** Persistent logging of every attempt, capturing timestamp, student name, roll number, quiz title, score, total marks, percentage, and pass/fail status.
-* **Administrative Analytics:** Dynamic summary statistics reporting total test attempts, number of passing candidates, and aggregate pass rate percentage.
-
-### 2.5 TQM Defect Logging & SQC Checksheets
-* **Live Defect Audit Trail:** Dedicated `defect_logs` SQLite table acting as a digital checksheet for tracking system defects and anomalies.
-* **Poka-Yoke Defect Logging:** Automatic logging of validation failures (e.g., missing student identity) as resolved defects.
-* **Manual Quality Event Logging:** Interactive UI panel enabling instructors and auditors to record category, description, severity (Low, Medium, High, Critical), and resolution status (Open, In Progress, Resolved).
-
-### 2.6 Dual Execution Architecture
-* **Graphical User Interface (GUI):** Modern, clean desktop application built using Python `tkinter` and `ttk` themed widgets.
-* **Terminal CLI Fallback Runner:** Headless command-line interface (`main.py --cli`) ensuring 100% feature accessibility on non-GUI or remote terminal environments.
-
----
-
-## 3.0 Out-of-Scope Capabilities (Explicit Boundaries)
-
-To ensure high depth of execution, rigorous quality standards, and adherence to the BBAT104 academic timeline, the following capabilities are explicitly classified as **Out of Scope**:
-
-```
-+──────────────────────────────────────────────────────────┬──────────────────────────────────────────────────────────+
-| Out-of-Scope Feature                                     | Technical & Pedagogical Justification                    |
-+──────────────────────────────────────────────────────────┼──────────────────────────────────────────────────────────+
-| 1. Live Video / AI-Based Webcam Proctoring               | Requires heavyweight computer vision dependencies        |
-|    (e.g., OpenCV, facial recognition, eye tracking)      | (OpenCV, PyTorch) that induce high CPU overhead, memory  |
-|                                                          | thrashing, and directly violate the Zero-Latency SLA.    |
-+──────────────────────────────────────────────────────────┼──────────────────────────────────────────────────────────+
-| 2. External LMS Integrations                             | Enterprise integrations require complex authentication   |
-|    (e.g., Canvas, Moodle, Blackboard LTI 1.3)            | layers, OAuth2 handshakes, and remote API dependencies   |
-|                                                          | that introduce uncontrolled network-induced delays.      |
-+──────────────────────────────────────────────────────────┼──────────────────────────────────────────────────────────+
-| 3. Commercial Payment Gateways                           | The system is an educational assessment platform; billing|
-|    (e.g., Stripe, PayPal, Razorpay)                      | logic, financial webhooks, and PCI-DSS compliance are     |
-|                                                          | irrelevant to academic quiz evaluation.                  |
-+──────────────────────────────────────────────────────────┼──────────────────────────────────────────────────────────+
-| 4. Multi-Tenant Cloud Microservices Infrastructure       | Distributed systems introduce network latency (REST/gRPC)|
-|    (e.g., Kubernetes, Kafka, Distributed Sharding)       | that conflict with our local zero-latency quality goal.  |
-|                                                          | Local SQLite3 with WAL mode delivers superior sub-10ms   |
-|                                                          | transactional determinism.                               |
-+──────────────────────────────────────────────────────────┼──────────────────────────────────────────────────────────+
-| 5. Subjective / Essay Long-Answer NLP Grading            | Natural Language Processing models (transformers) are    |
-|                                                          | non-deterministic and computationally expensive, causing |
-|                                                          | multi-second evaluation lag incompatible with instant    |
-|                                                          | scorecard presentation.                                  |
-+──────────────────────────────────────────────────────────┼──────────────────────────────────────────────────────────+
-| 6. Cryptographic Blockchain Credential Verification      | Excessive hashing overhead with zero added value for     |
-|                                                          | internal college course quality audits.                  |
-+──────────────────────────────────────────────────────────┼──────────────────────────────────────────────────────────+
-```
+### 2.3 Assigned Quality Goal: Five Q04 Security Features
+1. **Feature 1 — Role-Based Login:**
+   * Cryptographic password verification.
+   * Server-side `@role_required` access enforcement across routes.
+   * Access-denied handling (HTTP 403 Forbidden with security audit logging).
+   * Session fixation prevention via session regeneration.
+   * Anti-CSRF protection on all state-changing POST requests.
+2. **Feature 2 — Password Reset:**
+   * Secure, unpredictable 32-byte URL-safe reset tokens.
+   * Tokens stored exclusively as SHA-256 hashes in `password_resets`.
+   * Strict 15-minute expiration window and single-use invalidation.
+   * User enumeration prevention with generic user-facing responses.
+   * Invalidation of active sessions upon successful credential update.
+3. **Feature 3 — Input Validation:**
+   * Strict server-side type coercion and bounds checking for all request parameters.
+   * Sanitization and contextual HTML auto-escaping to eliminate XSS risks.
+   * Parameterized SQLite queries (`?` placeholders) to eliminate SQL injection.
+   * User-friendly error messaging without leaking stack traces or internal secrets.
+4. **Feature 4 — Audit Trail:**
+   * Dedicated, append-only `audit_logs` database table.
+   * Automatic recording of logins, failures, logouts, password resets, CRUD actions, and unauthorized access attempts.
+   * Metadata captured: timestamp, event type, actor username, actor role, target entity, outcome, IP address, and details.
+   * Exclusive read access granted solely to Administrators.
+   * Strict prohibition on logging plaintext passwords or raw reset tokens.
+5. **Feature 5 — Encryption & Sensitive Data Protection:**
+   * Salted, adaptive cryptographic password hashing (PBKDF2-HMAC-SHA256 / scrypt).
+   * Sensitive secrets isolated in environment variables (`FLASK_SECRET_KEY`).
+   * Production-ready session cookie flags (`HttpOnly=True`, `SameSite=Lax`, `Secure` when HTTPS enabled).
+   * Server-side confinement of quiz answer keys.
 
 ---
 
-## 4.0 User Role Matrix & Access Control Policies
+## 3. User Roles & Responsibilities
 
-The system implements Role-Based Access Control (RBAC) to enforce separation of concerns, protect evaluation integrity, and prevent administrative errors.
+| Role | Responsibilities | Scope Boundaries |
+| :--- | :--- | :--- |
+| **Student** | Self-registers, logs in, undertakes timed quizzes, views personal scorecards, and reviews own attempt history. | Cannot access administrative views, edit quizzes, inspect answer keys, or view other students' records. |
+| **Instructor / Quiz Creator** | Creates, reads, updates, and deletes quizzes and questions; monitors global student gradebook; reviews TQM defect checksheets. | Cannot modify administrator accounts or alter security audit logs. |
+| **Administrator** | Full platform oversight; manages user accounts and roles; reviews and filters the Security Audit Trail (`audit_logs`); performs system administration. | Audit log records are append-only and cannot be altered or erased. |
+| **Auditor** | Quality assurance inspector evaluating TQM compliance and defect logs. | Read-only inspection of TQM defect logs and security summary metrics. |
 
-### 4.1 Defined User Roles
-1. **Student / Examinee:** Authorized to take quizzes, review active questions, navigate options, trigger submissions, and view immediate scorecards. Restricted from viewing answer keys prior to submission and from altering quiz content.
-2. **Faculty / Course Instructor:** Authorized to manage quizzes and questions (full CRUD), configure passing thresholds, inspect student results, and review evaluation metrics.
-3. **TQM Quality Auditor:** Evaluates system adherence to quality standards, inspects the defect checksheet, verifies Poka-Yoke error handling, and validates latency benchmarks.
-4. **System Administrator:** Maintains database schema, resolves critical defects, and oversees environment configuration.
+---
 
-### 4.2 RBAC Permissions Matrix
+## 4. Entity CRUD Matrix
 
-| Functional Capability | Student | Faculty | TQM Auditor | System Admin |
+| Entity | Create (C) | Read (R) | Update (U) | Delete (D) |
 | :--- | :---: | :---: | :---: | :---: |
-| Access Student Quiz Portal | ✅ Permitted | ✅ Permitted | ✅ Permitted | ✅ Permitted |
-| Attempt & Submit Quiz | ✅ Permitted | ✅ Permitted | ✅ Permitted | ✅ Permitted |
-| View Immediate Personal Scorecard | ✅ Permitted | ✅ Permitted | ✅ Permitted | ✅ Permitted |
-| Create / Add New Quizzes | ❌ Denied | ✅ Permitted | 👁️ Read-Only | ✅ Permitted |
-| Edit Existing Quiz Parameters | ❌ Denied | ✅ Permitted | 👁️ Read-Only | ✅ Permitted |
-| Delete Quizzes (Cascade) | ❌ Denied | ✅ Permitted | ❌ Denied | ✅ Permitted |
-| Add / Edit / Delete Questions | ❌ Denied | ✅ Permitted | 👁️ Read-Only | ✅ Permitted |
-| View Global Student Results Gradebook | ❌ Denied | ✅ Permitted | ✅ Permitted | ✅ Permitted |
-| View TQM Defect Log & Checksheet | ❌ Denied | 👁️ Read-Only | ✅ Permitted | ✅ Permitted |
-| Log / Update Quality Defects (PDCA) | ❌ Denied | ✅ Permitted | ✅ Permitted | ✅ Permitted |
-| Direct Database Schema Alterations | ❌ Denied | ❌ Denied | ❌ Denied | ✅ Permitted |
-
-### 4.3 Poka-Yoke Access & Operational Protections
-* **Answer Concealment Guard:** During an active quiz, the student UI only binds to question stems and options. The `correct_option` field is held securely in the engine's internal memory buffer and is never exposed in radio button metadata or labels until the submission event completes.
-* **Accidental Loss Guard:** When an instructor triggers quiz deletion, the application presents a two-step confirmation dialogue explicitly warning that all child questions will be permanently deleted.
-* **Identity Completeness Guard:** Students cannot start an assessment without non-empty Name and Roll Number entries.
+| **Users** | Student Self-Registration / Admin | Profile / Admin User List | Password Reset / Admin Role Edit | Admin Deactivation |
+| **Quizzes** | Instructor / Admin | All Users (Public Catalog) | Instructor / Admin | Instructor / Admin (Cascade) |
+| **Questions** | Instructor / Admin | Instructor / Admin (Full Keys)<br/>Student (Stems & Options Only) | Instructor / Admin | Instructor / Admin |
+| **Attempts / Results**| Automated Exam Engine upon Submission | Student (Self Only)<br/>Instructor/Admin (All Students) | N/A (Immutable Exam Record) | Admin (Integrity Preserving) |
+| **Audit Logs** | Automated Event Interceptor | Admin (Exclusive View) | Prohibited (Append-Only) | Prohibited (Append-Only) |
 
 ---
 
-## 5.0 Project Milestone & Review Roadmap
+## 5. Technology, Persistence & Deployment Scope
 
-The development, quality auditing, and evaluation of this system are strictly aligned with the four progressive milestones of the **BBAT104 Evaluation Deliverables & Marking Scheme (70 Raw Marks)**:
+### 5.1 Technology Stack
+* **Language:** Python 3.10+ (compatible through Python 3.14).
+* **Web Framework:** Flask 3.x (lightweight, modular WSGI framework).
+* **Frontend:** Responsive HTML5, CSS3, modern accessible layouts with dark/light theme support.
+* **Preserved Fallbacks:** Tkinter desktop GUI (`gui.py`) and CLI test runner (`main.py`).
 
-```
-+──────────────────────────────────────────────────────────────────────────────────────────────────────+
-|                                    BBAT104 TQM COURSE ROADMAP                                        |
-+──────────────────────────────────────────────────────────────────────────────────────────────────────+
-|  [ REVIEW 1: Setup & SRS ] ➔ CO1 (10 Marks) [CURRENT MILESTONE]                                      |
-|  • GitHub Repository Initialization: `BBAT104_TQM_AU_24_5942`                                         |
-|  • System Architecture Flowchart (`docs/ARCHITECTURE.md`) with Mermaid & ASCII flow diagrams         |
-|  • Software Requirements Specification (`docs/SRS.md`) aligned with IEEE 830 & TQM principles        |
-|  • Scope Definition Document (`docs/SCOPE.md`) with In-Scope/Out-of-Scope boundaries & RBAC Matrix   |
-|  • Comprehensive Root README (`README.md`) with navigation and setup instructions                    |
-+───────────────────────────────────────────────────┬──────────────────────────────────────────────────+
-                                                    │
-                                                    ▼
-+──────────────────────────────────────────────────────────────────────────────────────────────────────+
-|  [ REVIEW 2: Base System & CRUD ] ➔ CO1, CO2 (15 Marks)                                              |
-|  • Fully functional base CRUD operations (Quizzes & Questions management)                            |
-|  • Operational In-Memory Quiz Engine with Live Countdown Timer                                       |
-|  • Execution of assigned 5 Quality Goal features (Zero Latency Submissions & Auto-Grading)           |
-+───────────────────────────────────────────────────┬──────────────────────────────────────────────────+
-                                                    │
-                                                    ▼
-+──────────────────────────────────────────────────────────────────────────────────────────────────────+
-|  [ REVIEW 3: FMEA & Risk Audit ] ➔ CO2 (15 Marks)                                                    |
-|  • Construction of Failure Mode and Effects Analysis (FMEA) Matrix with RPN calculations             |
-|  • Process mapping using SIPOC (Suppliers, Inputs, Process, Outputs, Customers)                      |
-|  • Critical-to-Quality (CTQ) Tree formulation and defect logging audits                              |
-+───────────────────────────────────────────────────┬──────────────────────────────────────────────────+
-                                                    │
-                                                    ▼
-+──────────────────────────────────────────────────────────────────────────────────────────────────────+
-|  [ REVIEW 4: SQC & Continuous Improvement ] ➔ CO2, CO3 (15 Marks)                                    |
-|  • Pareto Analysis (80/20 Rule) charting defect frequencies via Matplotlib                           |
-|  • Ishikawa (Fishbone) Diagram for root-cause analysis (People, Process, Code, Infrastructure)       |
-|  • Standardized Checksheets and Deming Plan-Do-Check-Act (PDCA) continuous improvement cycle log    |
-+───────────────────────────────────────────────────┬──────────────────────────────────────────────────+
-                                                    │
-                                                    ▼
-+──────────────────────────────────────────────────────────────────────────────────────────────────────+
-|  [ FINAL REVIEW: Viva Defense & GitHub Health ] ➔ CO3 (15 Marks: 10 Viva + 5 GitHub Health)          |
-|  • Live interactive software demonstration and bug-handling defense                                  |
-|  • Viva voce on TQM tool selection and statistical analysis                                          |
-|  • GitHub repository health verification (>= 30 meaningful commits, clean issue tracking)            |
-+──────────────────────────────────────────────────────────────────────────────────────────────────────+
-```
+### 5.2 Persistence Tier
+* **Database:** SQLite3 with Write-Ahead Logging (`PRAGMA journal_mode=WAL`) and foreign key constraints (`PRAGMA foreign_keys=ON`).
+* **Tables:** `users`, `password_resets`, `quizzes`, `questions`, `attempts`, `audit_logs`, `defect_logs`.
+* **Integrity:** Strict cascade deletions from quizzes to questions; atomic transactions for grading and attempt logging.
+
+### 5.3 Hosting & Deployment Scope
+* **WSGI Production Application Server:** Configured for Gunicorn / Waitress.
+* **HTTPS Transport:** Secure cookie headers enabled for HTTPS deployments.
+* **Secrets Management:** Environment variable loading (`os.environ.get('FLASK_SECRET_KEY')`) with dynamic fallback for local development.
 
 ---
 
-## 6.0 Scope Change Control & Governance
+## 6. Testing & Quality Assurance Scope
 
-Any proposed modification to the project boundaries defined in this document must undergo formal change evaluation:
-1. **Impact Assessment:** Proposed changes must be analyzed for their effect on the **Zero-Latency SLA** ($< 100\text{ ms}$ threshold). Any feature adding blocking I/O to the submission path will be rejected.
-2. **TQM Principle Alignment:** Additions must demonstrate compliance with at least one core TQM methodology (Poka-Yoke error prevention, Kaizen continuous improvement, or fact-based SQC decision-making).
-3. **Audit Trail Documentation:** Approved changes shall be documented in the repository commit history and logged within the TQM defect/improvement register.
+* **Unit Testing:** Automated test suite (`unittest`) validating all route endpoints, status codes, and template variables.
+* **Security Testing:**
+  - Authentication boundary and unauthorized access denial (HTTP 401 / 403).
+  - CSRF omission and invalid token rejection (HTTP 400).
+  - Password reset token single-use and expiration enforcement.
+  - SQL injection prevention using parameterized queries.
+  - XSS mitigation via Jinja2 auto-escaping.
+  - Answer key confidentiality during active quiz attempts.
+  - Duplicate submission lockout.
+* **CRUD Verification:** Create, Read, Update, and Delete tests for quizzes, questions, and users.
+* **Database Integrity:** Foreign key constraint validation and cascade deletion testing.
 
 ---
 
-## 7.0 Document Approvals & Sign-Off
+## 7. Explicit Exclusions & Out-of-Scope Items
 
-* **Project Author:** Krutika Agrawal (AU-24-5942)  
-* **Course:** BBAT104 – Fundamentals of TQM  
-* **Date:** October 2026  
-* **Evaluation Status:** Submitted for Review 1 Review & Evaluation  
+To prevent scope creep and maintain alignment with Review 1 and Review 2 grading rubrics, the following components are explicitly designated as **Future Work (Scheduled for Reviews 3 & 4)**:
+* **Review 3 Deliverables:** Failure Mode and Effects Analysis (FMEA) Matrix with RPN calculations, SIPOC Process Map, CTQ Tree, and formal Defect Logging Checksheets.
+* **Review 4 Deliverables:** Statistical Quality Control (SQC) tools, including automated Pareto Charts (80/20 analysis), Ishikawa Fishbone Root-Cause Diagrams, and Deming Plan-Do-Check-Act (PDCA) Continuous Improvement tracking logs.
+* **Third-Party Email Relay:** Production SMTP gateway integration (e.g., SendGrid/AWS SES) is out-of-scope for local academic evaluation; the system implements token generation, storage, and retrieval workflows locally.
+* **Biometric Proctoring:** Video/audio monitoring and browser lockdown extensions are outside the scope of this project.
+
+---
+
+## 8. Assumptions, Constraints & Risks
+
+### 8.1 Assumptions
+1. Candidates and faculty access the application using modern web browsers supporting HTML5 and JavaScript.
+2. The runtime environment possesses Python 3.10 or higher with standard library dependencies.
+3. Persistent storage is available locally or via volume mounts in containerized environments.
+
+### 8.2 Constraints
+1. **Zero External Heavy Dependencies:** The project strictly avoids heavy external database engines or bloated frameworks to maintain fast startup, zero-latency execution, and academic reproducibility.
+2. **Commit Count Standard:** The project repository must maintain at least 30 meaningful Git commits across the development lifecycle.
+
+### 8.3 Risks & Mitigation Strategies
+* **Risk 1 (Session Hijacking):** Mitigated via `HttpOnly` and `SameSite=Lax` cookies, combined with session regeneration upon login.
+* **Risk 2 (Duplicate Quiz Submissions):** Mitigated via thread locks, single-use `submission_token`, and immediate state purging upon grading.
+* **Risk 3 (Credential Exposure):** Mitigated via adaptive salted hashing (PBKDF2/scrypt) and excluding secret keys from Git tracking.
+
+---
+
+## 9. Acceptance Criteria for Review 1 & Review 2
+
+| Review Phase | Acceptance Milestone | Success Criteria |
+| :--- | :--- | :--- |
+| **Review 1** | Repository & Architecture | Clean Git repository on branch `main` with active remote; detailed `docs/ARCHITECTURE.md` with Mermaid diagrams; comprehensive `docs/SRS.md`; formal `docs/SCOPE.md`; aligned `README.md`. |
+| **Review 2** | Base System & CRUD | Fully functional Quiz CRUD (Create, Read, Update, Delete) and Question CRUD; student examination delivery with timer and accurate scoring; role-governed result access. |
+| **Review 2** | Q04 Security Features | Working Role-Based Login (Admin, Instructor, Student); secure single-use Password Reset flow; server-side Input Validation; tamper-evident Audit Trail; cryptographic Password Hashing & Secret Protection. |
+| **Quality** | Automated Test Suite | 100% pass rate across all automated unit and security tests. |

@@ -1,473 +1,484 @@
 # System Architecture & Technical Design Document
 
-**Project Title:** Online Quiz System  
-**Course:** BBAT104 – Fundamentals of Total Quality Management (TQM)  
-**Academic Session:** 2026–27  
-**Student Name:** Krutika Agrawal  
-**Registration / Roll Number:** AU-24-5942  
+**Project Title:** Secure Online Quiz System  
+**Course Code & Name:** BBAT104 – Fundamentals of Total Quality Management (TQM)  
+**Academic Session:** 2026–2027  
+**Roll Number:** 39  
+**Candidate Name:** Krutika Agrawal  
+**Registration Number:** AU-24-5942  
 **Assigned Topic Digit:** 9 – Online Quiz System  
-**Assigned Quality Goal:** Ensure zero latency during submissions & auto-grading  
-**Document Revision:** 1.0 (Review 1 Deliverable)  
+**Assigned Quality Goal:** Q04 — Improve Security  
+**Core Objective:** Ensure secure quiz submissions, protect user data, and prevent unauthorized access  
+**Evaluation Scope:** Review 1 (Setup & SRS) and Review 2 (Base System & CRUD)  
+**Document Revision:** 2.0 (Security Engineering Architecture)  
 
 ---
 
 ## 1. Executive Summary & Architectural Vision
 
-The **Online Quiz System** is an engineering project built to address critical software quality bottlenecks in computer-based assessment (CBA) platforms. In high-stakes educational examinations, student submissions often experience noticeable processing delays (latencies between 500ms and 3,000ms), caused by synchronous disk I/O, relational database table locking, and sequential scoring operations. These delays lead to user interface freezes, anxiety, accidental double submissions, and potential data corruption.
+The **Secure Online Quiz System** is an enterprise-grade academic assessment platform engineered according to the principles of Total Quality Management (TQM) and Defense-in-Depth application security. Modern Computer-Based Assessment (CBA) systems routinely face severe security risks, including unauthorized administrative privilege escalation, student session tampering, answer-key leakage in client responses, credential stuffing, SQL injection, Cross-Site Scripting (XSS), and Cross-Site Request Forgery (CSRF).
 
-To eliminate these defects, this system is engineered around the core TQM Quality Goal: **Ensure zero latency during submissions & auto-grading**. 
+Under the assigned TQM Quality Goal **Q04 — Improve Security**, this system implements five foundational security controls directly integrated into a modular web architecture:
+1. **Role-Based Login & Authorization (RBAC):** Cryptographically enforced separation of privileges across three roles: *Administrator*, *Quiz Creator / Instructor*, and *Student*.
+2. **Secure Password Reset:** Cryptographically randomized, single-use, time-delimited (15-minute) reset tokens stored as SHA-256 hashes, with session invalidation upon credential update.
+3. **Comprehensive Input Validation:** Multi-layered server-side boundary checks, type casting, whitelist filtering, contextual HTML escaping, and parameterized SQL queries to eliminate injection flaws.
+4. **Tamper-Evident Security Audit Trail:** An append-only audit log tracking every authentication event, permission failure, administrative action, and CRUD mutation with timestamps, actors, and network context.
+5. **Encryption & Sensitive Data Protection:** Modern, adaptive password hashing (PBKDF2-HMAC-SHA256 / scrypt via Werkzeug/hashlib), secure HTTP cookies (`HttpOnly`, `SameSite=Lax`, `Secure`), runtime secret key isolation outside source control, and zero exposure of answer keys prior to evaluation.
 
-By decoupling submission evaluation from persistent storage through an **In-Memory Caching and Asynchronous Submission Pipeline**, the application guarantees instantaneous student score rendering (sub-millisecond evaluation time, perceived latency $< 20\text{ ms}$, far below the human perception limit of $100\text{ ms}$). Persistent database updates are executed safely using optimized SQLite3 operations and non-blocking background transaction queuing.
+In addition to the primary browser-based web architecture, the system preserves existing desktop (Tkinter) and terminal CLI modules as robust local execution fallbacks.
 
 ---
 
 ## 2. System Architecture Decomposition
 
-The system is structured across four decoupled architectural layers, designed according to modular software engineering and Total Quality Management (TQM) principles:
+The system is organized into a modular four-tier architecture with explicit trust boundaries:
 
 ```
-+──────────────────────────────────────────────────────────────────────────+
-|                        1. PRESENTATION LAYER                             |
-|  +───────────────────────────────────+  +─────────────────────────────+  |
-|  | Tkinter Graphical Interface (GUI) |  | Interactive CLI Test Runner |  |
-|  | - Student Portal                  |  | (Fallback / Headless Mode)  |  |
-|  | - Timed Quiz Taking Interface     |  | - Fast Terminal Quiz Taker  |  |
-|  | - Instant Scorecard & Breakdown   |  | - Admin CRUD Console        |  |
-|  | - Admin Quiz & Question Manager   |  | - TQM Defect Log Terminal   |  |
-|  | - Historical Gradebook View       |  +─────────────────────────────+  |
-|  | - TQM Defect Log & Checksheet     |                                   |
-|  +───────────────────────────────────+                                   |
-+────────────────────────────────────┬─────────────────────────────────────+
-                                     │ User Actions & Input Feeds
-                                     ▼
-+──────────────────────────────────────────────────────────────────────────+
-|                    2. QUIZ RUNTIME & ENGINE LAYER                        |
-|  +───────────────────────────+  +─────────────────────────────────────+  |
-|  | Session State Manager     |  | Real-Time Countdown Timer           |  |
-|  | - Active Quiz Context     |  | - 1-Second Non-Blocking Tick        |  |
-|  | - Question Cache (RAM)    |  | - Auto-Submit on Expiry Trigger     |  |
-|  | - Answer Buffer: Dict     |  | - UI Sync via `after()` Event Loop  |  |
-|  +───────────────────────────+  +─────────────────────────────────────+  |
-|                                                                          |
-|  +────────────────────────────────────────────────────────────────────+  |
-|  | Poka-Yoke Error Proofing & Debounce Gate                           |  |
-|  | - Required field validation (Roll/Name)                            |  |
-|  | - Single-submission lock (Disables submit trigger upon click)     |  |
-|  +────────────────────────────────────────────────────────────────────+  |
-+────────────────────────────────────┬─────────────────────────────────────+
-                                     │ Submission Event Trigger
-                                     ▼
-+──────────────────────────────────────────────────────────────────────────+
-|             3. ZERO-LATENCY SUBMISSION & GRADING CORE                    |
-|  +───────────────────────────────────+  +─────────────────────────────+  |
-|  | Instant O(1) Auto-Grading Engine  |  | In-Memory Async Submission  |  |
-|  | - In-Memory Key Comparator        |  | Queue & Dispatcher          |  |
-|  | - Linear Hash Scoring (< 0.5 ms)  |  | - Event Enqueuing           |  |
-|  | - Pass/Fail Categorization        |  | - Non-blocking Worker Thread|  |
-|  | - Per-question Result Mapping     |  | - Error Retry Buffer        |  |
-|  +───────────────────────────────────+  +─────────────────────────────+  |
-+────────────────────────────────────┬─────────────────────────────────────+
-                                     │ Asynchronous DB Persistence
-                                     ▼
-+──────────────────────────────────────────────────────────────────────────+
-|                     4. DATA PERSISTENCE LAYER                            |
-|  +────────────────────────────────────────────────────────────────────+  |
-|  | SQLite3 Relational Database Engine (`quiz_system.db`)              |  |
-|  | - Schema: `quizzes`, `questions`, `attempts`, `defect_logs`        |  |
-|  | - Write-Ahead Logging (WAL Mode) for Concurrency                   |  |
-|  | - Indexed Foreign Keys for Rapid Sub-10ms Transaction Commits      |  |
-|  +────────────────────────────────────────────────────────────────────+  |
-+──────────────────────────────────────────────────────────────────────────+
++─────────────────────────────────────────────────────────────────────────────+
+|                         TIER 1: PRESENTATION TIER                           |
+|  +───────────────────────────────────+  +────────────────────────────────+  |
+|  | Web Browser Interface (HTML5/CSS3)|  | Preserved Execution Fallbacks  |  |
+|  | - Student Quiz Portal & Timer     |  | - Tkinter Desktop GUI (gui.py) |  |
+|  | - Instructor Quiz & Question CRUD |  | - Terminal CLI Runner (main.py)|  |
+|  | - Admin RBAC & Audit Trail Viewer |  |                                |  |
+|  | - Secure Auth & Password Recovery |  |                                |  |
+|  +───────────────────────────────────+  +────────────────────────────────+  |
++──────────────────────────────────────┬──────────────────────────────────────+
+                                       │ HTTPS / TLS (Encrypted Transport)
++──────────────────────────────────────▼──────────────────────────────────────+
+|              TIER 2: APPLICATION & ACCESS CONTROL TIER (Flask WSGI)         |
+|  +───────────────────────────────────────────────────────────────────────+  |
+|  | Request Interceptor & Security Middleware                             |  |
+|  | - HTTPS Enforcement & Secure Cookie Headers                           |  |
+|  | - Anti-CSRF Token Generation & Synchronizer Token Validation          |  |
+|  | - Session Fixation Defense & Session Regeneration                     |  |
+|  +───────────────────────────────────────────────────────────────────────+  |
+|  +───────────────────────────────────────────────────────────────────────+  |
+|  | Authentication & Role-Based Access Control (RBAC Engine)               |  |
+|  | - @login_required & @role_required('admin', 'instructor', 'student')   |  |
+|  | - Privilege Escalation Prevention & IDOR Boundary Verification        |  |
+|  +───────────────────────────────────────────────────────────────────────+  |
+|  +───────────────────────────────────────────────────────────────────────+  |
+|  | Core Functional Controllers (Blueprints / Endpoints)                  |  |
+|  | - Auth Controller: Login, Register, Logout, Password Reset Token      |  |
+|  | - Quiz & Question CRUD Controller: Create, Read, Update, Delete Quizzes|  |
+|  | - Examination & Grading Engine: Deadline checks, In-memory evaluation |  |
+|  | - Result & Gradebook Controller: Role-delimited score history        |  |
+|  | - Security Audit Viewer: Paginated, read-only event logs (Admin only) |  |
+|  +───────────────────────────────────────────────────────────────────────+  |
++──────────────────────────────────────┬──────────────────────────────────────+
+                                       │ Strict Validation & Parameterization
++──────────────────────────────────────▼──────────────────────────────────────+
+|                       TIER 3: BUSINESS & SECURITY DOMAIN                    |
+|  +─────────────────────────+  +────────────────────────+  +──────────────+  |
+|  | Input Validation Engine |  | Cryptographic Engine   |  | Audit Logger |  |
+|  | - Whitelist validators  |  | - Password Hashing     |  | - Auth logs  |  |
+|  | - Range & format checks |  | - Reset Token Gen/Hash |  | - CRUD logs  |  |
+|  | - Poka-Yoke error gates |  | - Secret Isolation     |  | - Alert logs |  |
+|  +─────────────────────────+  +────────────────────────+  +──────────────+  |
++──────────────────────────────────────┬──────────────────────────────────────+
+                                       │ Parameterized SQL Queries (ACID)
++──────────────────────────────────────▼──────────────────────────────────────+
+|                       TIER 4: PERSISTENCE LAYER                             |
+|  +───────────────────────────────────────────────────────────────────────+  |
+|  | SQLite3 Relational Database (quiz_system.db with WAL mode)             |  |
+|  | - users (id, username, email, password_hash, role, created_at, active)|  |
+|  | - password_resets (id, user_id, token_hash, expires_at, used)         |  |
+|  | - quizzes (id, title, description, time_limit_mins, pass_percentage)  |  |
+|  | - questions (id, quiz_id, text, opt_a..opt_d, correct_option, marks)   |  |
+|  | - attempts (id, student_id, quiz_id, score, total_marks, %, status)   |  |
+|  | - audit_logs (id, timestamp, event_type, actor, target, outcome, ctx) |  |
+|  | - defect_logs (TQM checksheet defect tracking)                         |  |
+|  +───────────────────────────────────────────────────────────────────────+  |
++─────────────────────────────────────────────────────────────────────────────+
 ```
 
 ---
 
 ## 3. Visual System Flowcharts
 
-### 3.1 High-Level Architecture Flowchart (Mermaid.js)
+### 3.1 High-Level Architecture Flowchart
 
 ```mermaid
 flowchart TD
-    subgraph UI["Presentation Layer (Client)"]
-        A1["Student Portal (gui.py)"]
-        A2["Faculty Admin Manager"]
-        A3["TQM Defect Checksheet UI"]
-        A4["Interactive CLI (main.py)"]
+    subgraph Client["Client Browser / User Interface"]
+        User([User: Student / Instructor / Admin])
+        UI["Web UI: HTML5 + CSS3 + Accessible Views"]
     end
 
-    subgraph ENGINE["Runtime Quiz Engine (RAM)"]
-        B1["Quiz Session Controller"]
-        B2["Preloaded Questions Cache"]
-        B3["User Response Hash Map"]
-        B4["Asynchronous Timer Thread"]
+    subgraph SecurityBoundary["Security & Middleware Gateway"]
+        HTTPS{"HTTPS Transport & Security Headers"}
+        CSRF{"CSRF Token Verification"}
+        AuthGuard{"Session & RBAC Guard<br/>@role_required"}
+        InputVal{"Server-side Input Validation<br/>(Poka-Yoke)"}
     end
 
-    subgraph ZL["Zero-Latency Evaluation Engine"]
-        C1["Debounce Gate & Poka-Yoke Lock"]
-        C2["O(1) Memory Answer Evaluator"]
-        C3["Score & Percentage Calculator"]
-        C4["Instant UI Scorecard Renderer"]
+    subgraph AppCore["Application Core Services"]
+        AuthSvc["Authentication & Password Reset Service"]
+        QuizCRUD["Quiz & Question CRUD Service"]
+        ExamEngine["Quiz Attempt & Secure Grading Engine"]
+        ResultSvc["Role-Filtered Result Service"]
+        AuditSvc["Security Audit Logging Service"]
     end
 
-    subgraph PERSIST["Async Queue & Persistence"]
-        D1["In-Memory Submission Queue"]
-        D2["Background Persistence Worker"]
-        D3[("SQLite Database: quiz_system.db")]
+    subgraph Persistence["Persistence & Cryptography"]
+        Crypto["Password Hashing (scrypt/PBKDF2)<br/>& Token Hasher (SHA-256)"]
+        DB[(SQLite3 Database Engine<br/>WAL Mode & Foreign Keys)]
     end
 
-    %% Data Flow Connections
-    A1 -->|Initiates Quiz| B1
-    B1 -->|Loads Quiz Questions into RAM| B2
-    B2 -->|Populates Navigation| A1
-    A1 -->|Record Option Click| B3
-    B4 -->|Tick / Time Expiry| B1
-    A1 -->|Submit Button Click| C1
-    B4 -->|Auto-Submit Trigger| C1
+    User -->|HTTP Requests| UI
+    UI -->|Submissions & Actions| HTTPS
+    HTTPS --> CSRF
+    CSRF -->|Valid Token| AuthGuard
+    AuthGuard -->|Authorized Role| InputVal
+    InputVal -->|Sanitized Input| AppCore
 
-    C1 -->|Poka-Yoke Validated| C2
-    B2 -.->|Answer Key| C2
-    B3 -.->|Student Choices| C2
-    C2 -->|Scored Results| C3
-    C3 -->|Instant Visual Feedback (<20ms)| C4
-    C4 -->|Renders Grade & Breakdown| A1
-
-    C3 -->|Enqueue Attempt Event| D1
-    D1 -->|Pulls Queued Submission| D2
-    D2 -->|WAL Write Attempt & Defect Logs| D3
-
-    A2 -->|CRUD Operations| D3
-    A3 -->|Log Quality Defect| D3
-    A4 -->|CLI Fallback Operations| D3
+    AuthSvc --> Crypto
+    AuthSvc --> AuditSvc
+    QuizCRUD --> AuditSvc
+    ExamEngine --> AuditSvc
+    AuthSvc --> DB
+    QuizCRUD --> DB
+    ExamEngine --> DB
+    ResultSvc --> DB
+    AuditSvc --> DB
 ```
 
 ---
 
-### 3.2 End-to-End Submission & Auto-Grading Sequence Diagram
-
-This sequence diagram depicts the exact chronological data flow from the moment the user clicks **Submit** to the final rendering of the scorecard, illustrating why submission response time achieves zero perceptible latency.
+### 3.2 Authentication & Password Reset Sequence Diagram
 
 ```mermaid
 sequenceDiagram
     autonumber
-    actor Student as Student / Examinee
-    participant UI as Tkinter GUI (Main Thread)
-    participant Timer as Timer Daemon
-    participant Engine as Quiz Runtime (RAM)
-    participant Grader as In-Memory Evaluator
-    participant Queue as Async Submission Queue
-    participant Worker as DB Queue Worker Thread
-    participant DB as SQLite3 (quiz_system.db)
+    actor User as User / Browser
+    participant App as Flask Auth Route
+    participant Val as Input Validator
+    participant Crypto as Cryptographic Module
+    participant Audit as Audit Trail
+    participant DB as SQLite3 Database
 
-    Note over Student, UI: Quiz in Progress (All questions cached in RAM)
-    Student->>UI: Selects options (Stored in RAM dictionary)
-    UI->>Engine: update user_answers[q_id] = choice
-    
-    alt Manual Submission
-        Student->>UI: Clicks "Submit Quiz" button
-        UI->>UI: Poka-Yoke Confirmation Dialog
-    else Timer Expiry
-        Timer->>UI: Countdown hits 00:00 -> auto_submit()
+    Note over User,DB: Phase A: Role-Based Login Flow
+    User->>App: POST /login (username, password, csrf_token)
+    App->>Val: Validate CSRF & non-empty credentials
+    Val-->>App: Validated
+    App->>DB: Query user by username (parameterized)
+    DB-->>App: User record (id, role, password_hash)
+    App->>Crypto: Verify password against password_hash
+    alt Password Invalid
+        Crypto-->>App: False
+        App->>Audit: Log Auth Failure (Event: LOGIN_FAILED, Actor: username)
+        App-->>User: 401 Unauthorized ("Invalid username or password")
+    else Password Valid
+        Crypto-->>App: True
+        App->>App: Regenerate session ID, store user_id and role
+        App->>Audit: Log Auth Success (Event: LOGIN_SUCCESS, Actor: username, Role)
+        App-->>User: 302 Redirect to Dashboard based on Role
     end
 
-    Note over UI, Grader: Step 1: Poka-Yoke Lock & Zero-Latency Evaluation
-    UI->>UI: Disable Submit Button (Debounce Lock)
-    UI->>Timer: Cancel active countdown timer
-    UI->>Grader: submit_quiz(user_answers, questions_cache)
-    
-    critical Instant In-Memory Auto-Grading (< 0.5 ms)
-        loop For each Question in Cache
-            Grader->>Grader: Compare user_choice == correct_option (O(1))
-            Grader->>Grader: Accumulate total_marks & scored_marks
-            Grader->>Grader: Append to detailed_breakdown list
-        end
-        Grader->>Grader: Compute percentage & Status (Passed/Failed)
+    Note over User,DB: Phase B: Secure Password Reset Flow
+    User->>App: POST /forgot-password (email, csrf_token)
+    App->>Val: Validate email syntax
+    App->>DB: Query user by email
+    DB-->>App: User record (or None)
+    App->>Crypto: Generate secure random token & SHA-256 hash
+    App->>DB: Insert password_resets (user_id, token_hash, expires_at: +15min)
+    App->>Audit: Log Reset Request (Event: PASSWORD_RESET_REQUESTED)
+    App-->>User: 200 OK ("If the account exists, instructions were prepared.")
+
+    User->>App: POST /reset-password/<token> (new_password, csrf_token)
+    App->>Crypto: Hash incoming token with SHA-256
+    App->>DB: Find active, unexpired, unused token
+    alt Token Invalid or Expired
+        DB-->>App: None
+        App->>Audit: Log Reset Rejection (Event: INVALID_RESET_TOKEN)
+        App-->>User: 400 Bad Request ("Token invalid or expired")
+    else Token Valid
+        App->>Val: Check password strength (min 8 chars, mixed case/numbers)
+        App->>Crypto: Hash new password
+        App->>DB: Update user password_hash & mark token used = 1
+        App->>App: Invalidate existing sessions for user
+        App->>Audit: Log Password Change (Event: PASSWORD_RESET_COMPLETED)
+        App-->>User: 302 Redirect to /login ("Password successfully reset")
     end
-
-    Note over UI, Student: Step 2: Instantaneous UI Scorecard Rendering
-    Grader-->>UI: Return (score, total, percentage, status, breakdown)
-    UI->>Student: Display Scorecard & Question Breakdown Screen (< 20 ms)
-
-    Note over Grader, DB: Step 3: Non-Blocking Background Persistence
-    Grader->>Queue: Enqueue Attempt Payload (student, roll, quiz_id, score, status)
-    Queue-->>UI: Immediate Ack (Non-blocking)
-    
-    Worker->>Queue: Dequeue Attempt Payload
-    Worker->>DB: INSERT INTO attempts VALUES (...)
-    DB-->>Worker: Commit OK (WAL Mode)
-    Worker-->>Worker: Log transaction latency telemetry
 ```
 
 ---
 
-### 3.3 Detailed ASCII Flowchart: Zero-Latency Data Pipeline
+### 3.3 Quiz Attempt, Answer Protection & Grading Sequence Diagram
 
-```
-====================================================================================================
-                        ONLINE QUIZ SYSTEM - ZERO-LATENCY SUBMISSION FLOWCHART
-====================================================================================================
+```mermaid
+sequenceDiagram
+    autonumber
+    actor Student as Authenticated Student
+    participant Router as Quiz Controller
+    participant Engine as Exam Engine
+    participant DB as SQLite3 Database
+    participant Audit as Audit Logger
 
- [ STUDENT EXAM PORTAL ]
-           │
-           ▼
- [ 1. POKA-YOKE INPUT VALIDATION GATE ]
-           │  • Name & Roll Validation Check
-           │  • Non-empty quiz selection check
-           ├─────────────────────────[ Fails ]──► Show Modal Warning + Log Defect Checksheet
-           │
-      [ Passes ]
-           │
-           ▼
- [ 2. IN-MEMORY QUIZ SESSION SETUP ]
-           │  • Query SQLite `questions` table ONCE at start
-           │  • Cache all questions & options into RAM: list[dict]
-           │  • Initialize `user_answers = {}` hash map in RAM
-           │  • Dispatch non-blocking 1000ms countdown timer
-           │
-           ▼
- [ 3. INTERACTIVE QUIZ ENGAGEMENT ] ◄──────────────────────────────┐
-           │                                                       │
-           ├─► Option Selected ──► `user_answers[q_id] = opt`      │
-           ├─► Clear Answer    ──► `del user_answers[q_id]`        │
-           ├─► Nav Next/Prev   ──► Load index from RAM Cache       │
-           │                                                       │
-           ▼                                                       │
- [ 4. SUBMISSION EVENT TRIGGER ]                                   │
-           │                                                       │
-      ┌────┴──────────────────────────────┐                        │
-      ▼                                   ▼                        │
- [ User Clicks Submit ]         [ Timer Hits 00:00 ]               │
-      │                                   │                        │
-      ▼                                   │                        │
- [ Confirmation Prompt ]                  │                        │
-      ├─ Cancel ──────────────────────────┴────────────────────────┘
-      │
-   [ Confirm ]
-      │
-      ▼
- [ 5. POKA-YOKE DEBOUNCE LOCK ]
-      │  • Immediately disable submit button (Prevents double submit defect)
-      │  • Cancel timer event loop `after_cancel(timer_id)`
-      │
-      ▼
- [ 6. IN-MEMORY AUTO-GRADING ENGINE (Sub-millisecond Execution) ]
-      │
-      │  for q in cached_questions:
-      │      ans = user_answers.get(q["id"], "None")
-      │      if ans == q["correct_option"]:
-      │          scored_marks += q["marks"]
-      │      detailed_breakdown.append(...)
-      │
-      │  percentage = (scored_marks / total_marks) * 100
-      │  status = "Passed" if percentage >= pass_cutoff else "Failed"
-      │
-      ├─────────────────────────────────────────────────┐
-      │                                                 │
-      ▼ (Path A: Main UI Thread)                        ▼ (Path B: Persistence Thread)
- [ 7. INSTANT SCORECARD DISPLAY ]             [ 8. ASYNC PERSISTENCE QUEUE ]
-      │                                                 │
-      │  • Renders marks & percentage                   │  • Enqueue payload to `queue.Queue`
-      │  • Color-coded Passed/Failed badge              │  • Background daemon worker picks payload
-      │  • Treeview breakdown with ✓/✗ marks            │  • Executes SQLite `INSERT INTO attempts`
-      │  • Total UI Turnaround: < 20 ms                 │  • Fast WAL-mode commit (< 10 ms)
-      │                                                 │
-      ▼                                                 ▼
- [ Student Views Instant Result ]             [ Permanent Storage Updated ]
-====================================================================================================
+    Student->>Router: GET /quizzes/1/start (Session active)
+    Router->>DB: Fetch quiz metadata & question stems
+    DB-->>Router: Questions WITHOUT correct_option exposed
+    Router->>Engine: Initialize attempt session (token, started_at, deadline)
+    Router-->>Student: Render Question 1 (Timer started, CSRF attached)
+
+    loop Answering Questions
+        Student->>Router: POST /attempt/answer (q_num, choice, csrf_token)
+        Router->>Engine: Store answer in server session buffer
+        Engine-->>Student: 204 No Content (Instant buffer save)
+    end
+
+    Student->>Router: POST /attempt/submit (final answers, submission_token)
+    Router->>Engine: Acquire submission lock & verify single-use token
+    alt Duplicate or Replay Submission
+        Engine-->>Student: 302 Redirect ("Attempt already submitted")
+    else Legitimate Submission
+        Engine->>DB: Fetch true answer keys from database
+        DB-->>Engine: Official correct options
+        Engine->>Engine: Compare buffered answers vs keys server-side
+        Engine->>Engine: Compute marks, percentage, Pass/Fail status
+        Engine->>DB: INSERT INTO attempts (score, percentage, status)
+        Engine->>Audit: Log Attempt (Event: QUIZ_SUBMITTED, Score, Status)
+        Engine-->>Student: Redirect to private result page (Scorecard displayed)
+    end
 ```
 
 ---
 
-### 3.4 State Transition Diagram (Mermaid.js)
+### 3.4 State Transition Diagram for Quiz Attempt Lifecycle
 
 ```mermaid
 stateDiagram-v2
-    [*] --> Idle: Application Launched
-    Idle --> ValidatingInputs: Enter Name & Roll + Select Quiz
+    [*] --> Idle: Student logged in
+    Idle --> AttemptInitialized: POST /quizzes/{id}/start
+    AttemptInitialized --> QuestionActive: Load Question 1
     
-    ValidatingInputs --> Idle: Validation Failed (Poka-Yoke Alert)
-    ValidatingInputs --> QuizActive: Validation Passed & Questions Loaded to RAM
-    
-    state QuizActive {
-        [*] --> DisplayQuestion
-        DisplayQuestion --> OptionSelected: User selects A/B/C/D
-        OptionSelected --> DisplayQuestion: Stored in RAM
-        DisplayQuestion --> ClearOption: User clicks Clear
-        ClearOption --> DisplayQuestion: Removed from RAM
-        DisplayQuestion --> DisplayQuestion: Navigate Prev / Next
+    state QuestionActive {
+        [*] --> DisplayingQuestion
+        DisplayingQuestion --> AnswerSelected: Select Radio Option
+        AnswerSelected --> DisplayingQuestion: Navigate Next/Previous
+        DisplayingQuestion --> ClearChoice: Clear Selection
+        ClearChoice --> DisplayingQuestion
     }
 
-    QuizActive --> SubmissionGate: Click Submit Button OR Timer Expiry (00:00)
+    QuestionActive --> GracefulSubmission: Click Submit Quiz
+    QuestionActive --> ExpirySubmission: Timer Reaches 00:00 (Auto-Submit)
     
-    state SubmissionGate {
-        [*] --> DebounceLock: Lock UI & Cancel Timer
-        DebounceLock --> InRAMGrading: Run O(1) Answer Matcher
-        InRAMGrading --> EnqueuePersistence: Push to In-Memory Queue
-        InRAMGrading --> RenderScorecard: Push to UI Main Loop
-    }
-
-    SubmissionGate --> ScorecardView: Results Rendered (<20ms)
-    ScorecardView --> Idle: Return to Portal Home
+    GracefulSubmission --> EvaluationLock: Submission Lock Acquired
+    ExpirySubmission --> EvaluationLock: Submission Lock Acquired
+    
+    EvaluationLock --> ServerGrading: Compare against Server Keys
+    ServerGrading --> PersistResult: Write to attempts table
+    PersistResult --> LogAudit: Record AUDIT_EVENT
+    LogAudit --> ScorecardRendered: One-Time Private Result Token
+    ScorecardRendered --> [*]: Review Completed
 ```
 
 ---
 
-## 4. Mechanics of Zero-Latency Performance
+## 4. Role-Based Access Control (RBAC) Architecture
 
-### 4.1 Root Cause Analysis of Conventional CBA Latency
+### 4.1 Permission Matrix
 
-In standard online assessment platforms, student submissions suffer from perceptible latency due to the following architectural flaws:
-1. **Network Round-Trip Delay (RTT):** Synchronous HTTP request-response cycles add $150\text{ ms} - 800\text{ ms}$ of latency depending on network conditions.
-2. **Synchronous Relational Locking:** Writing answers to disk-bound relational databases requires acquiring table/row locks, disk write flushes (`fsync`), and secondary index updates ($50\text{ ms} - 300\text{ ms}$).
-3. **Server-Side Sequential Evaluation:** Querying answer keys sequentially from disk-based tables causes CPU and disk thrashing under concurrent load.
-4. **UI Thread Blocking:** Executing database transactions directly on the user interface thread freezes the UI event pump, causing an unresponsive screen.
+| Capability / Endpoint | Anonymous | Student | Quiz Creator / Instructor | Administrator |
+| :--- | :---: | :---: | :---: | :---: |
+| View Homepage & Public Catalog | **Yes** | **Yes** | **Yes** | **Yes** |
+| Register Account (Student default) | **Yes** | No | No | No |
+| Login / Logout / Request Reset | **Yes** | **Yes** | **Yes** | **Yes** |
+| Start & Submit Quiz Attempt | No | **Yes** | **Yes** | **Yes** |
+| View Personal Quiz Scorecard | No | **Yes** (Own only) | **Yes** (Own only) | **Yes** (Own only) |
+| View Personal Result History | No | **Yes** (Own only) | **Yes** (Own only) | **Yes** (Own only) |
+| View Global Student Gradebook | No | No | **Yes** (All students) | **Yes** (All students) |
+| Create New Quiz (Quiz CRUD) | No | No | **Yes** | **Yes** |
+| Edit / Update Quiz Metadata | No | No | **Yes** | **Yes** |
+| Delete Quiz (Cascade Questions) | No | No | **Yes** | **Yes** |
+| Add Questions to Quiz (Q CRUD) | No | No | **Yes** | **Yes** |
+| Edit Question & Options | No | No | **Yes** | **Yes** |
+| Delete Question from Quiz | No | No | **Yes** | **Yes** |
+| View Security Audit Trail | No | No | No | **Yes** (Exclusive) |
+| View TQM Defect Log Checksheet | No | No | **Yes** | **Yes** |
+| Manage User Roles / Accounts | No | No | No | **Yes** (Exclusive) |
 
-### 4.2 The Zero-Latency Architectural Solution
-
-The Online Quiz System achieves zero perceptible latency through five coordinated engineering strategies:
-
-| Architectural Strategy | Implementation Mechanism | Latency Impact | TQM Quality Principle |
-| :--- | :--- | :--- | :--- |
-| **In-Memory Question Caching** | All questions, options, and answer keys for the selected quiz are pre-fetched in a single read query during quiz startup and held in local Python memory structures (`list[dict]`). | $0\text{ ms}$ disk I/O during quiz runtime | **Process Efficiency:** Eliminates repetitive read queries. |
-| **$O(1)$ Hash Map Answer Tracking** | Student choices are captured in an in-memory dictionary `self.user_answers = {question_id: selected_option}` directly upon click events. | $< 0.01\text{ ms}$ per option selection | **Poka-Yoke:** Instant state consistency without round-trips. |
-| **In-Memory Auto-Grading Engine** | At submission time, the evaluation function iterates through the in-memory questions list and performs instantaneous key comparisons in CPU registers. For a 50-question quiz, this loop completes in under $0.4\text{ ms}$. | $< 0.5\text{ ms}$ evaluation latency | **Continuous Flow:** Immediate value creation without waiting. |
-| **Decoupled Asynchronous Persistence** | Persistence of the attempt record is decoupled from UI rendering. The UI immediately displays the scorecard, while the persistence task is dispatched to an in-memory queue processed by SQLite with Write-Ahead Logging (WAL). | Perceived UI latency reduced from $>250\text{ ms}$ to $< 15\text{ ms}$ | **Zero Latency Goal:** Decouples user-facing experience from storage latency. |
-| **Poka-Yoke Debounce Gate** | The submission button is disabled immediately upon click, preventing duplicate triggers while confirmation modals provide deterministic state control. | Prevents double-submission lockups | **Poka-Yoke (Mistake Proofing):** Eliminates duplicate record defects. |
-
-### 4.3 Latency Budget & Timing Comparison
-
-The following table provides an empirical latency budget breakdown comparing a standard synchronous database submission model with our Zero-Latency In-Memory Pipeline:
-
-```
-+──────────────────────────────────────────+────────────────────────+────────────────────────+
-| Processing Stage                         | Synchronous DB Model   | Zero-Latency Pipeline  |
-+──────────────────────────────────────────+────────────────────────+────────────────────────+
-| 1. Submit Button Debounce & Lock         | Not implemented        | 0.05 ms                |
-| 2. Answer Extraction                     | Form parsing (5 ms)    | In-Memory Dict (0.1 ms)|
-| 3. Answer Key Retrieval                  | SQL Query Disk (45 ms) | Preloaded RAM (0.0 ms) |
-| 4. Evaluation & Score Calculation        | Sequential SQL (80 ms) | CPU In-Memory (0.4 ms) |
-| 5. Database INSERT & fsync Commit        | Blocking Write (120 ms)| Async / Fast WAL (8 ms)|
-| 6. UI Render & Scorecard Display         | Post-commit (50 ms)    | Instantaneous (10 ms)  |
-+──────────────────────────────────────────+────────────────────────+────────────────────────+
-| TOTAL USER-PERCEIVED SUBMISSION LATENCY  | 300.0 ms               | 10.55 ms               |
-| Perceptual Classification                | Noticeable Delay       | ZERO PERCEPTIBLE LAG   |
-+──────────────────────────────────────────+────────────────────────+────────────────────────+
-```
-
-> **Human Perception Benchmark:** According to Nielsen Norman Group usability research, interactions completing in under **100 milliseconds** are perceived as instantaneous by human users. Our measured pipeline turnaround time of **~10.55 ms** operates well within this threshold, achieving true **zero latency**.
+### 4.2 Server-Side Authorization Enforcement
+Authorization is strictly enforced in Python route decorators:
+- `@login_required`: Verifies presence and authenticity of active user session.
+- `@role_required(['admin', 'instructor'])`: Checks session role against allowed role whitelist. If an unauthenticated user accesses the route, they are redirected to `/login`. If an authenticated user lacks permissions, the server responds with a strict `403 Forbidden` and logs an `UNAUTHORIZED_ACCESS_ATTEMPT` audit event.
 
 ---
 
 ## 5. Database Schema & Data Dictionary
 
-The persistence layer uses SQLite3 (`quiz_system.db`), designed with 3NF relational normalization, primary key indexing, and cascade delete integrity.
+The persistence tier utilizes SQLite3 configured with Write-Ahead Logging (`PRAGMA journal_mode=WAL`) and foreign key enforcement (`PRAGMA foreign_keys=ON`).
 
 ### 5.1 Entity-Relationship (ER) Diagram
 
 ```mermaid
 erDiagram
-    QUIZZES ||--o{ QUESTIONS : contains
-    QUIZZES ||--o{ ATTEMPTS : records
-    DEFECT_LOGS {
-        int id PK
-        string category
-        string description
-        string severity
-        string status
-        string logged_at
+    USERS ||--o{ PASSWORD_RESETS : "requests"
+    USERS ||--o{ ATTEMPTS : "undertakes"
+    USERS ||--o{ AUDIT_LOGS : "triggers"
+    QUIZZES ||--o{ QUESTIONS : "contains"
+    QUIZZES ||--o{ ATTEMPTS : "evaluated_in"
+
+    USERS {
+        INTEGER id PK
+        TEXT username UK
+        TEXT email UK
+        TEXT password_hash
+        TEXT role
+        INTEGER is_active
+        TEXT created_at
     }
+
+    PASSWORD_RESETS {
+        INTEGER id PK
+        INTEGER user_id FK
+        TEXT token_hash
+        TEXT expires_at
+        INTEGER used
+        TEXT created_at
+    }
+
     QUIZZES {
-        int id PK
-        string title UK
-        string description
-        int time_limit_mins
-        float pass_percentage
-        string created_at
+        INTEGER id PK
+        TEXT title UK
+        TEXT description
+        INTEGER time_limit_mins
+        REAL pass_percentage
+        TEXT created_at
     }
+
     QUESTIONS {
-        int id PK
-        int quiz_id FK
-        string question_text
-        string option_a
-        string option_b
-        string option_c
-        string option_d
-        string correct_option
-        int marks
+        INTEGER id PK
+        INTEGER quiz_id FK
+        TEXT question_text
+        TEXT option_a
+        TEXT option_b
+        TEXT option_c
+        TEXT option_d
+        TEXT correct_option
+        INTEGER marks
     }
+
     ATTEMPTS {
-        int id PK
-        string student_name
-        string student_roll
-        int quiz_id FK
-        int score
-        int total_marks
-        float percentage
-        string status
-        string completed_at
+        INTEGER id PK
+        TEXT student_name
+        TEXT student_roll
+        INTEGER user_id FK
+        INTEGER quiz_id FK
+        INTEGER score
+        INTEGER total_marks
+        REAL percentage
+        TEXT status
+        TEXT completed_at
+    }
+
+    AUDIT_LOGS {
+        INTEGER id PK
+        TEXT timestamp
+        TEXT event_type
+        TEXT actor_username
+        TEXT actor_role
+        TEXT target_entity
+        TEXT outcome
+        TEXT ip_address
+        TEXT details
+    }
+
+    DEFECT_LOGS {
+        INTEGER id PK
+        TEXT category
+        TEXT description
+        TEXT severity
+        TEXT status
+        TEXT logged_at
     }
 ```
 
-### 5.2 Schema Specification
+### 5.2 Schema Specification & Security Attributes
 
-#### 1. Table: `quizzes`
-Stores metadata and parameters for each quiz.
-* `id`: `INTEGER PRIMARY KEY AUTOINCREMENT`
-* `title`: `TEXT NOT NULL UNIQUE` (Quiz name, enforced uniqueness)
-* `description`: `TEXT` (Syllabus or topic overview)
-* `time_limit_mins`: `INTEGER DEFAULT 10` (Duration for countdown timer)
-* `pass_percentage`: `REAL DEFAULT 50.0` (Benchmark cutoff for passing)
-* `created_at`: `TEXT DEFAULT CURRENT_TIMESTAMP`
+#### 1. Table: `users`
+- `id` (INTEGER PRIMARY KEY AUTOINCREMENT)
+- `username` (TEXT NOT NULL UNIQUE COLLATE NOCASE)
+- `email` (TEXT NOT NULL UNIQUE COLLATE NOCASE)
+- `password_hash` (TEXT NOT NULL) — Salted, cryptographic hash (e.g. `scrypt:32768:8:1` or `pbkdf2:sha256`)
+- `role` (TEXT NOT NULL DEFAULT 'student') — Whitelist: `'admin'`, `'instructor'`, `'student'`
+- `is_active` (INTEGER NOT NULL DEFAULT 1) — Account status flag
+- `created_at` (TEXT DEFAULT CURRENT_TIMESTAMP)
 
-#### 2. Table: `questions`
-Contains individual multiple-choice questions mapped to a parent quiz.
-* `id`: `INTEGER PRIMARY KEY AUTOINCREMENT`
-* `quiz_id`: `INTEGER NOT NULL, FOREIGN KEY REFERENCES quizzes(id) ON DELETE CASCADE`
-* `question_text`: `TEXT NOT NULL`
-* `option_a`: `TEXT NOT NULL`
-* `option_b`: `TEXT NOT NULL`
-* `option_c`: `TEXT NOT NULL`
-* `option_d`: `TEXT NOT NULL`
-* `correct_option`: `TEXT NOT NULL` (Restricted to 'A', 'B', 'C', or 'D')
-* `marks`: `INTEGER DEFAULT 1`
+#### 2. Table: `password_resets`
+- `id` (INTEGER PRIMARY KEY AUTOINCREMENT)
+- `user_id` (INTEGER NOT NULL, FK to `users.id` ON DELETE CASCADE)
+- `token_hash` (TEXT NOT NULL UNIQUE) — SHA-256 hash of token; raw token is never persisted
+- `expires_at` (TEXT NOT NULL) — ISO 8601 timestamp (+15 minutes limit)
+- `used` (INTEGER NOT NULL DEFAULT 0) — Flag enforced for single-use consumption
+- `created_at` (TEXT DEFAULT CURRENT_TIMESTAMP)
 
-#### 3. Table: `attempts`
-Stores completed student evaluation records.
-* `id`: `INTEGER PRIMARY KEY AUTOINCREMENT`
-* `student_name`: `TEXT NOT NULL`
-* `student_roll`: `TEXT NOT NULL`
-* `quiz_id`: `INTEGER NOT NULL, FOREIGN KEY REFERENCES quizzes(id)`
-* `score`: `INTEGER NOT NULL`
-* `total_marks`: `INTEGER NOT NULL`
-* `percentage`: `REAL NOT NULL`
-* `status`: `TEXT NOT NULL` ('Passed' or 'Failed')
-* `completed_at`: `TEXT DEFAULT CURRENT_TIMESTAMP`
+#### 3. Table: `quizzes`
+- `id` (INTEGER PRIMARY KEY AUTOINCREMENT)
+- `title` (TEXT NOT NULL UNIQUE)
+- `description` (TEXT)
+- `time_limit_mins` (INTEGER DEFAULT 10)
+- `pass_percentage` (REAL DEFAULT 50.0)
+- `created_at` (TEXT DEFAULT CURRENT_TIMESTAMP)
 
-#### 4. Table: `defect_logs` (TQM Quality Audit Table)
-Provides a live checksheet and audit trail for quality control events and Poka-Yoke triggers.
-* `id`: `INTEGER PRIMARY KEY AUTOINCREMENT`
-* `category`: `TEXT NOT NULL` ('Input Validation', 'Response Latency', 'Database Consistency', 'UI Usability', 'Grading Logic')
-* `description`: `TEXT NOT NULL`
-* `severity`: `TEXT NOT NULL` ('Low', 'Medium', 'High', 'Critical')
-* `status`: `TEXT DEFAULT 'Open'` ('Open', 'In Progress', 'Resolved')
-* `logged_at`: `TEXT DEFAULT CURRENT_TIMESTAMP`
+#### 4. Table: `questions`
+- `id` (INTEGER PRIMARY KEY AUTOINCREMENT)
+- `quiz_id` (INTEGER NOT NULL, FK to `quizzes.id` ON DELETE CASCADE)
+- `question_text` (TEXT NOT NULL)
+- `option_a` (TEXT NOT NULL)
+- `option_b` (TEXT NOT NULL)
+- `option_c` (TEXT NOT NULL)
+- `option_d` (TEXT NOT NULL)
+- `correct_option` (TEXT NOT NULL CHECK(correct_option IN ('A','B','C','D')))
+- `marks` (INTEGER DEFAULT 1 CHECK(marks >= 1))
+
+#### 5. Table: `attempts`
+- `id` (INTEGER PRIMARY KEY AUTOINCREMENT)
+- `student_name` (TEXT NOT NULL)
+- `student_roll` (TEXT NOT NULL)
+- `user_id` (INTEGER, FK to `users.id`)
+- `quiz_id` (INTEGER NOT NULL, FK to `quizzes.id`)
+- `score` (INTEGER NOT NULL)
+- `total_marks` (INTEGER NOT NULL)
+- `percentage` (REAL NOT NULL)
+- `status` (TEXT NOT NULL CHECK(status IN ('Passed', 'Failed')))
+- `completed_at` (TEXT DEFAULT CURRENT_TIMESTAMP)
+
+#### 6. Table: `audit_logs`
+- `id` (INTEGER PRIMARY KEY AUTOINCREMENT)
+- `timestamp` (TEXT DEFAULT CURRENT_TIMESTAMP)
+- `event_type` (TEXT NOT NULL) — e.g. `AUTH_LOGIN_SUCCESS`, `AUTH_LOGIN_FAILURE`, `AUTH_LOGOUT`, `PASSWORD_RESET_REQ`, `PASSWORD_RESET_DONE`, `QUIZ_CREATE`, `QUIZ_UPDATE`, `QUIZ_DELETE`, `QUESTION_CREATE`, `QUESTION_UPDATE`, `QUESTION_DELETE`, `UNAUTHORIZED_ACCESS`
+- `actor_username` (TEXT NOT NULL)
+- `actor_role` (TEXT NOT NULL)
+- `target_entity` (TEXT) — e.g. `quiz:1`, `question:5`, `user:admin`
+- `outcome` (TEXT NOT NULL) — `SUCCESS`, `FAILURE`, `BLOCKED`
+- `ip_address` (TEXT) — Client remote IP
+- `details` (TEXT) — Contextual message (never logging plaintext passwords or raw tokens)
+
+#### 7. Table: `defect_logs`
+- Preserved for TQM quality checksheet and SQC defect tracking.
 
 ---
 
 ## 6. Software Architecture Quality Attributes
 
-Aligned with TQM evaluation standards, the architecture embodies the following software quality attributes:
-
-1. **Robustness & Fault Tolerance:** If graphical Tkinter packages are absent in a target headless Linux environment, `main.py` detects `ModuleNotFoundError` and transparently routes the session to `run_cli_mode()`, preventing runtime crash defects.
-2. **Modularity & Separation of Concerns:** Database logic (`database.py`), visual rendering (`gui.py`), and system bootstrapping (`main.py`) are strictly decoupled. Changes to the UI do not alter database query schemas.
-3. **Maintainability & Extensibility:** New question types or reporting export modules (e.g., Pandas/Matplotlib chart generators for Review 4) can hook directly into `database.py` without modifying the core grading algorithm.
-4. **Data Integrity (ACID):** SQLite enforces transactional atomicity. Cascade delete rules prevent orphaned questions when a parent quiz is removed.
-5. **Poka-Yoke Design:** Unfilled student names or roll numbers trigger immediate modal warnings and log defect entries before quiz initialization, eliminating null-entry defects.
+| Quality Attribute | Architectural Strategy | Verification Mechanism |
+| :--- | :--- | :--- |
+| **Security (Confidentiality)** | Answer keys stripped from client DOM; password hashes using salted scrypt/PBKDF2; session cookies HttpOnly and SameSite. | Automated DOM inspection tests; code review of API contracts. |
+| **Security (Integrity)** | CSRF synchronizer tokens on all state-changing endpoints; foreign key cascading; single-use submission locks. | Penetration unit tests for replay attacks and CSRF omission. |
+| **Security (Accountability)** | Dedicated audit trail recording all security-relevant transactions with timestamps and actors. | Unit tests asserting audit records generated upon login, CRUD, and access violations. |
+| **Reliability & ACID** | Parameterized SQLite queries with WAL journaling; automatic rollback on error. | Concurrent transaction tests; database integrity checks. |
+| **Usability & Poka-Yoke** | Server-side validation with clear user-friendly notifications; debounce locks preventing double submission. | Form validation testing with invalid/empty payloads. |
+| **Portability** | Cross-platform Python 3.10+ execution; preserved Tkinter GUI and CLI harness; zero bloated external dependencies. | Multi-environment validation on Linux/macOS/Windows. |
 
 ---
 
 ## 7. Review 1 Approval & Sign-Off
 
-* **Author:** Krutika Agrawal (AU-24-5942)
-* **Milestone:** Review 1: Setup & SRS (CO1 Mapped)
-* **Date:** October 2026
-* **Status:** Complete & Ready for Faculty Evaluation
+| Milestone Deliverable | Verification Status | Document Revision | Approval Date |
+| :--- | :---: | :---: | :---: |
+| **System Architecture Flowchart** | Verified & Formatted | 2.0 (Security Architecture) | October 2026 |
+| **Software Requirements Specification (SRS)** | Aligned with Q04 Security | 2.0 (Security Engineering) | October 2026 |
+| **Scope Definition Document** | Aligned with Reviews 1 & 2 | 2.0 (Formal Scope) | October 2026 |
+| **Repository Initialization & Structure** | Initialized, verified, in sync | 20+ Git Commits | October 2026 |

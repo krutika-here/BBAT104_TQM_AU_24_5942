@@ -1,14 +1,17 @@
 # Software Requirements Specification (SRS)
 
-**Project Title:** Online Quiz System  
-**Subject / Course Code:** BBAT104 – Fundamentals of Total Quality Management (TQM)  
-**Academic Session:** 2026–27  
+**Project Title:** Secure Online Quiz System  
+**Course Code & Name:** BBAT104 – Fundamentals of Total Quality Management (TQM)  
+**Academic Session:** 2026–2027  
+**Candidate Roll Number:** 39  
 **Candidate Name:** Krutika Agrawal  
 **University Registration Number:** AU-24-5942  
-**Assigned Digit & Baseline System:** Digit 9 – Online Quiz System  
-**Assigned TQM Quality Goal:** Ensure zero latency during submissions & auto-grading  
-**Specification Standard:** IEEE 830-1998 Aligned / TQM Software Engineering Framework  
-**Deliverable Phase:** Review 1: Setup & SRS (CO1 Mapped)  
+**Assigned Topic Digit:** 9 – Online Quiz System  
+**Assigned Quality Goal:** Q04 — Improve Security  
+**Core Objective:** Ensure secure quiz submissions, protect user data, and prevent unauthorized access  
+**Specification Standard:** IEEE 830-1998 Aligned / TQM Quality Engineering Framework  
+**Deliverable Scope:** Review 1 (Setup & SRS) and Review 2 (Base System & CRUD)  
+**Document Revision:** 2.0 (Security Engineering Specification)  
 
 ---
 
@@ -17,337 +20,282 @@
    1.1 [Purpose](#11-purpose)  
    1.2 [Document Conventions](#12-document-conventions)  
    1.3 [Intended Audience](#13-intended-audience)  
-   1.4 [Project Scope & Course Context](#14-project-scope--course-context)  
-   1.5 [Core TQM Quality Goal](#15-core-tqm-quality-goal)  
+   1.4 [Problem Statement & Background](#14-problem-statement--background)  
+   1.5 [Core TQM Quality Goal (Q04 — Improve Security)](#15-core-tqm-quality-goal-q04--improve-security)  
    1.6 [References & Standards](#16-references--standards)  
-2. [2.0 User Classes & Characteristics](#20-user-classes--characteristics)  
+2. [2.0 User Roles, Classes & Responsibilities](#20-user-roles-classes--responsibilities)  
    2.1 [User Persona 1: Student / Examinee](#21-user-persona-1-student--examinee)  
-   2.2 [User Persona 2: Faculty / Course Instructor](#22-user-persona-2-faculty--course-instructor)  
-   2.3 [User Persona 3: TQM Quality Auditor / Evaluator](#23-user-persona-3-tqm-quality-auditor--evaluator)  
-   2.4 [User Role & Privileges Matrix](#24-user-role--privileges-matrix)  
-   2.5 [Operating Environment & Assumptions](#25-operating-environment--assumptions)  
-3. [3.0 Functional Requirements](#30-functional-requirements)  
-   3.1 [Module 1: Quiz Management (CRUD)](#31-module-1-quiz-management-crud)  
-   3.2 [Module 2: Question Bank Management (CRUD)](#32-module-2-question-bank-management-crud)  
-   3.3 [Module 3: Student Portal & Examination Setup](#33-module-3-student-portal--examination-setup)  
-   3.4 [Module 4: In-Memory Quiz Delivery & Live Timer Engine](#34-module-4-in-memory-quiz-delivery--live-timer-engine)  
-   3.5 [Module 5: Zero-Latency Submission & Automated Grading Engine](#35-module-5-zero-latency-submission--automated-grading-engine)  
-   3.6 [Module 6: Student Gradebook & Historical Results](#36-module-6-student-gradebook--historical-results)  
-   3.7 [Module 7: TQM Defect Logging & SQC Checksheets](#37-module-7-tqm-defect-logging--sqc-checksheets)  
-   3.8 [Module 8: Dual Execution Architecture (GUI & CLI)](#38-module-8-dual-execution-architecture-gui--cli)  
-4. [4.0 Non-Functional Requirements (NFRs)](#40-non-functional-requirements-nfrs)  
-   4.1 [Latency & Real-Time Performance Thresholds](#41-latency--real-time-performance-thresholds)  
-   4.2 [Throughput & Capacity](#42-throughput--capacity)  
-   4.3 [Reliability, Availability & Fault Tolerance](#43-reliability-availability--fault-tolerance)  
-   4.4 [Data Integrity & ACID Compliance](#44-data-integrity--acid-compliance)  
-   4.5 [Usability & Poka-Yoke Error Proofing](#45-usability--poka-yoke-error-proofing)  
-   4.6 [Maintainability, Portability & Code Standards](#46-maintainability-portability--code-standards)  
-5. [5.0 Critical-to-Quality (CTQ) Parameters & Quality Standards](#50-critical-to-quality-ctq-parameters--quality-standards)  
-   5.1 [Voice of Customer (VOC) to CTQ Tree Translation](#51-voice-of-customer-voc-to-ctq-tree-translation)  
-   5.2 [Six Sigma Quality Objectives](#52-six-sigma-quality-objectives)  
-   5.3 [Poka-Yoke (Mistake-Proofing) Rules](#53-poka-yoke-mistake-proofing-rules)  
-6. [6.0 Software Dependencies & Environment Setup](#60-software-dependencies--environment-setup)  
-   6.1 [Core Runtime & Tooling](#61-core-runtime--tooling)  
-   6.2 [Python Standard & Third-Party Libraries](#62-python-standard--third-party-libraries)  
-   6.3 [Installation & Configuration Verification](#63-installation--configuration-verification)  
+   2.2 [User Persona 2: Faculty / Quiz Creator](#22-user-persona-2-faculty--quiz-creator)  
+   2.3 [User Persona 3: System Administrator](#23-user-persona-3-system-administrator)  
+   2.4 [User Persona 4: TQM Quality Auditor](#24-user-persona-4-tqm-quality-auditor)  
+   2.5 [Role & Privileges Matrix](#25-role--privileges-matrix)  
+3. [3.0 Functional Requirements (FR)](#30-functional-requirements-fr)  
+   3.1 [Module 1: Authentication & Account Management](#31-module-1-authentication--account-management)  
+   3.2 [Module 2: Password Recovery & Reset Lifecycle](#32-module-2-password-recovery--reset-lifecycle)  
+   3.3 [Module 3: Quiz Management (CRUD)](#33-module-3-quiz-management-crud)  
+   3.4 [Module 4: Question & Answer Bank Management (CRUD)](#34-module-4-question--answer-bank-management-crud)  
+   3.5 [Module 5: Student Examination Portal & Live Timer](#35-module-5-student-examination-portal--live-timer)  
+   3.6 [Module 6: Answer Evaluation & Secure Score Calculation](#36-module-6-answer-evaluation--secure-score-calculation)  
+   3.7 [Module 7: Result Management & Historical Gradebook](#37-module-7-result-management--historical-gradebook)  
+   3.8 [Module 8: Security Audit Trail & Event Logging](#38-module-8-security-audit-trail--event-logging)  
+4. [4.0 Security Requirements (SEC)](#40-security-requirements-sec)  
+   4.1 [Role-Based Access Control & Privilege Escalation Defense](#41-role-based-access-control--privilege-escalation-defense)  
+   4.2 [Password Hashing & Sensitive Data Protection](#42-password-hashing--sensitive-data-protection)  
+   4.3 [Input Validation, Sanitization & Safe Parameterization](#43-input-validation-sanitization--safe-parameterization)  
+   4.4 [Anti-CSRF & Session Security](#44-anti-csrf--session-security)  
+   4.5 [Answer Key Confidentiality & Anti-Cheat Boundary](#45-answer-key-confidentiality--anti-cheat-boundary)  
+5. [5.0 Non-Functional Requirements (NFR)](#50-non-functional-requirements-nfr)  
+   5.1 [Performance & Response Latency](#51-performance--response-latency)  
+   5.2 [Reliability, Availability & Fault Tolerance](#52-reliability-availability--fault-tolerance)  
+   5.3 [Data Integrity & ACID Persistence](#53-data-integrity--acid-persistence)  
+   5.4 [Usability & Poka-Yoke Mistake-Proofing](#54-usability--poka-yoke-mistake-proofing)  
+   5.5 [Maintainability & Code Quality](#55-maintainability--code-quality)  
+6. [6.0 Interface, Data & Privacy Requirements](#60-interface-data--privacy-requirements)  
+   6.1 [User Interface Requirements](#61-user-interface-requirements)  
+   6.2 [Data Requirements & Schema Relationships](#62-data-requirements--schema-relationships)  
+   6.3 [Privacy & Data Protection Requirements](#63-privacy--data-protection-requirements)  
+7. [7.0 Deployment, Testing & Acceptance Criteria](#70-deployment-testing--acceptance-criteria)  
+   7.1 [Deployment Environment & Constraints](#71-deployment-environment--constraints)  
+   7.2 [Verification & Testing Strategy](#72-verification--testing-strategy)  
+   7.3 [Formal Acceptance Criteria](#73-formal-acceptance-criteria)  
+   7.4 [Assumptions, Dependencies & Limitations](#74-assumptions-dependencies--limitations)  
 
 ---
 
 ## 1.0 Introduction & Baseline Objectives
 
 ### 1.1 Purpose
-This Software Requirements Specification (SRS) provides a definitive, unambiguous, and testable description of the **Online Quiz System**. It details the functional behaviors, non-functional performance guarantees, system architecture constraints, and quality assurance metrics governing the system. It serves as the primary technical specification for **Review 1** of the BBAT104 course project.
+This Software Requirements Specification (SRS) defines the functional, non-functional, architectural, and security requirements for the **Secure Online Quiz System**. Developed for **BBAT104: Fundamentals of Total Quality Management**, this document establishes the binding engineering specification for **Review 1 (Setup & SRS)** and **Review 2 (Base System & CRUD)**, explicitly focused on Quality Goal **Q04 — Improve Security**.
 
 ### 1.2 Document Conventions
-* **FR-xx:** Functional Requirement identifier.
-* **NFR-xx:** Non-Functional Requirement identifier.
-* **CTQ-xx:** Critical-to-Quality parameter.
-* **Poka-Yoke:** Japanese manufacturing and engineering methodology for defect prevention and mistake-proofing.
-* **SLA:** Service Level Agreement / Guaranteed performance threshold.
-* **Must / Shall:** Mandatory requirements for compliance.
-* **Should:** Highly recommended capabilities.
+* **FR-[MOD]-[NUM]:** Functional Requirement identifier.
+* **SEC-[MOD]-[NUM]:** Security Requirement identifier.
+* **NFR-[CAT]-[NUM]:** Non-Functional Requirement identifier.
+* **Poka-Yoke:** Mistake-proofing mechanism preventing erroneous or malicious state transitions.
+* **RBAC:** Role-Based Access Control.
+* **Shall / Must:** Mandatory contractual obligation for review compliance.
 
 ### 1.3 Intended Audience
-* **Course Evaluators & Faculty:** To assess engineering rigor, TQM principles integration, and rubric compliance for Course Outcome 1 (CO1).
-* **Software Developers & Maintainers:** To understand component boundaries, data schemas, and API contracts.
-* **Quality Assurance Auditors:** To verify defect tracking, checksheet logging, and CTQ parameter compliance.
+* **Academic Evaluators & Faculty:** To assess Course Outcome 1 (CO1) and Course Outcome 2 (CO2) compliance against BBAT104 guidelines.
+* **Security & Quality Engineers:** To audit access boundaries, cryptography, tamper-resistance, and error handling.
+* **Developers & Maintainers:** To implement and test database models, route controllers, and UI views.
 
-### 1.4 Project Scope & Course Context
-The project is executed under the curriculum guidelines of **BBAT104: Fundamentals of Total Quality Management**, Academic Session 2026–27. Based on the student's registration digit (ending in **9**), the assigned baseline system is the **Online Quiz System**.
+### 1.4 Problem Statement & Background
+Computer-Based Assessment (CBA) systems operate in adversarial environments. Unsecured educational platforms frequently exhibit catastrophic vulnerabilities:
+1. **Broken Access Control & Insecure Direct Object References (IDOR):** Students modifying quiz IDs in URLs can inspect unreleased tests, tamper with other students' grades, or alter question answers.
+2. **Answer Key Leakage:** Client-rendered assessment forms frequently embed the correct answer or solution keys directly inside hidden HTML inputs or client-side JavaScript payloads.
+3. **Session Tampering & Replay Attacks:** Students submitting duplicate quiz payloads or replaying requests after deadlines expire to overwrite previously calculated scores.
+4. **Credential Vulnerabilities:** Plaintext or reversibly encrypted password storage, combined with insecure password recovery links that expose accounts to takeover.
+5. **Absence of Accountability:** Inability to audit unauthorized access attempts, grade modifications, or administrative changes due to lacking security audit logs.
 
-### 1.5 Core TQM Quality Goal
-The project's mandated quality objective is:
-> **"Ensure zero latency during submissions & auto-grading"**
+### 1.5 Core TQM Quality Goal (Q04 — Improve Security)
+Under BBAT104 guidelines for Roll Number 39 (Topic Digit 9), the assigned quality objective is:
+> **"Q04 — Improve Security: Ensure secure quiz submissions, protect user data, and prevent unauthorized access."**
 
-In computer-based testing, submission lag causes severe user stress, duplicate submission retries, and UI freezing. This specification mandates an architecture where answer grading takes place entirely in-memory with $O(1)$ complexity per question, resulting in instantaneous visual score display ($< 20\text{ ms}$ perceived latency), completely decoupled from secondary database disk write operations.
+To fulfill this quality mandate, the system establishes five required security features:
+1. **Role-Based Login:** Strict cryptographic authentication and server-enforced role separation (Administrator, Instructor, Student).
+2. **Password Reset:** Cryptographically randomized, single-use, time-limited reset tokens stored as hashes, with session revocation.
+3. **Input Validation:** Exhaustive server-side type and range validation, contextual escaping (XSS prevention), and SQL parameterization.
+4. **Audit Trail:** Persistent, append-only security audit log recording logins, failures, password resets, CRUD events, and security violations.
+5. **Encryption & Sensitive Data Protection:** Strong salted password hashing (PBKDF2/scrypt), secret isolation outside source control, HTTPS-ready session security, and complete answer-key confidentiality.
 
 ### 1.6 References & Standards
-1. *IEEE Std 830-1998:* Recommended Practice for Software Requirements Specifications.
-2. *BBAT104 TQM Course Guidelines, Allotment & Marking Scheme (Session 2026–27).*
-3. *Total Quality Management in Software Development (Kaizen, Deming PDCA, Poka-Yoke).*
-4. *Python 3.10+ PEP Standards & SQLite3 Transaction Guidelines.*
+1. *BBAT104 TQM Project Guidelines, Session 2026–2027.*
+2. *IEEE Std 830-1998:* Recommended Practice for Software Requirements Specifications.
+3. *OWASP Top 10 Web Application Security Risks (2021).*
+4. *NIST Special Publication 800-63B:* Digital Identity Guidelines — Authentication and Lifecycle Management.
 
 ---
 
-## 2.0 User Classes & Characteristics
+## 2.0 User Roles, Classes & Responsibilities
 
-The system serves three primary user classes with distinct operational profiles:
+The system defines four distinct user classes with strictly separated privilege profiles:
 
 ### 2.1 User Persona 1: Student / Examinee
-* **Role Description:** Candidates undertaking academic or technical quizzes.
-* **Technical Profile:** Novice to intermediate computer literacy; expects an intuitive, responsive, and stress-free interface.
-* **Core Activities:** Enters identification credentials, selects an active quiz, navigates multiple-choice questions, tracks remaining time via live countdown, and submits responses.
-* **Expectations:** Instantaneous scorecard feedback upon submission with zero UI freeze, clear question breakdown, and deterministic timer alerts.
+* **Description:** Enrolled students participating in timed quizzes.
+* **Permitted Actions:** Register account, authenticate, browse published quizzes, initiate quiz attempts, select answers, track live time limit, submit quizzes, view immediate private scorecards, and view own historical attempts.
+* **Restricted Actions:** Cannot create/edit/delete quizzes or questions; cannot inspect answer keys; cannot view other students' submissions or audit trails.
 
-### 2.2 User Persona 2: Faculty / Course Instructor
-* **Role Description:** Academic administrator responsible for curriculum assessment.
-* **Technical Profile:** Moderate technical literacy; requires streamlined administrative control over tests.
-* **Core Activities:** Creates new quizzes, sets time limits and passing cutoff percentages, adds/updates/deletes questions and options, reviews student attempt history, and analyzes pass/fail ratios.
-* **Expectations:** Robust CRUD operations with strict referential integrity (cascade deletes) and instant database updates.
+### 2.2 User Persona 2: Faculty / Quiz Creator
+* **Description:** Academic instructors designing curriculum assessments.
+* **Permitted Actions:** Full CRUD control over assigned Quizzes and Questions; configure time limits, pass percentages, and marks; view global student result gradebooks and calculate pass/fail statistics; inspect TQM defect checksheets.
+* **Restricted Actions:** Cannot modify system administrator accounts or alter security audit log records.
 
-### 2.3 User Persona 3: TQM Quality Auditor / Evaluator
-* **Role Description:** Evaluator assessing compliance with TQM quality standards, defect tracking, and performance targets.
-* **Technical Profile:** Advanced quality management expertise; familiar with SQC tools (Pareto, Ishikawa, FMEA, PDCA).
-* **Core Activities:** Inspects the live TQM defect log, categorizes software anomalies, audits RPN ratings, and monitors submission latency metrics.
-* **Expectations:** Transparent logging of all Poka-Yoke validation events and system exceptions into persistent checksheet tables.
+### 2.3 User Persona 3: System Administrator
+* **Description:** Platform owner maintaining system security, user accounts, and infrastructure.
+* **Permitted Actions:** Full access across all modules; user account and role management; review and filter the Security Audit Trail (`audit_logs`); manage system configuration; perform database maintenance.
+* **Restricted Actions:** Audit trail records are append-only; cannot tamper with or delete audit event logs.
 
-### 2.4 User Role & Privileges Matrix
+### 2.4 User Persona 4: TQM Quality Auditor
+* **Description:** Quality assurance evaluator auditing adherence to TQM quality parameters.
+* **Permitted Actions:** Read-only inspection of the live TQM defect logs, audit trail summary statistics, and CTQ parameter metrics.
 
-| Capability / Module | Student | Faculty / Admin | TQM Auditor |
-| :--- | :---: | :---: | :---: |
-| Launch Quiz Portal & Take Test | **Yes** | **Yes** | **Yes** |
-| Select Options & Navigate Questions | **Yes** | **Yes** | **Yes** |
-| Submit Quiz & View Personal Scorecard | **Yes** | **Yes** | **Yes** |
-| Create / Edit / Delete Quizzes (CRUD) | No | **Yes** | Read-Only |
-| Add / Update / Delete Questions (CRUD)| No | **Yes** | Read-Only |
-| View Global Student Result Gradebook | No | **Yes** | **Yes** |
-| Access TQM Defect Log & Checksheets  | No | Read-Only | **Yes** (Full) |
-| Log New Defect / Audit Event (PDCA)  | No | **Yes** | **Yes** |
+### 2.5 Role & Privileges Matrix
 
-### 2.5 Operating Environment & Assumptions
-* **Operating System:** Cross-platform (Linux/Ubuntu, Microsoft Windows 10/11, macOS).
-* **Hardware Requirements:** Minimum 1.0 GHz x86/ARM CPU, 512 MB available RAM, 50 MB disk space.
-* **Display:** Minimum screen resolution of $1024 \times 768$ pixels.
-* **Environment Fallback:** If X11/Wayland display server or graphical libraries are unavailable, the system automatically falls back to the full-featured CLI interface (`python3 main.py --cli`).
+| Capability / Endpoint | Student | Quiz Creator / Instructor | Administrator | Auditor |
+| :--- | :---: | :---: | :---: | :---: |
+| Self-Registration & Account Creation | **Yes** | No (Invited/Seeded) | No (Seeded) | No |
+| Login / Logout / Password Reset | **Yes** | **Yes** | **Yes** | **Yes** |
+| Browse Quizzes & Launch Attempt | **Yes** | **Yes** | **Yes** | Read-Only |
+| Submit Quiz Attempt & View Personal Result | **Yes** | **Yes** | **Yes** | Read-Only |
+| View Personal Attempt History | **Yes** (Self) | **Yes** (Self) | **Yes** (Self) | No |
+| Create / Edit / Delete Quizzes (Quiz CRUD)| No | **Yes** | **Yes** | Read-Only |
+| Create / Edit / Delete Questions (Q CRUD) | No | **Yes** | **Yes** | Read-Only |
+| View Global Student Gradebook | No | **Yes** (All students) | **Yes** (All students) | Read-Only |
+| View Security Audit Trail (`audit_logs`)  | No | No | **Yes** (Full) | Read-Only |
+| View TQM Defect Log Checksheet           | No | **Yes** | **Yes** | **Yes** (Full) |
+| Manage User Roles & Account Activation   | No | No | **Yes** | No |
 
 ---
 
-## 3.0 Functional Requirements
+## 3.0 Functional Requirements (FR)
 
-### 3.1 Module 1: Quiz Management (CRUD)
-* **FR-QM-01: Create Quiz**
-  * *Description:* The instructor shall be able to create a new quiz record with title, syllabus description, time limit (in minutes), and passing cutoff percentage.
-  * *Input:* Title (string), Description (string), Time Limit (integer $\ge 1$), Passing Cutoff (float between $1.0$ and $100.0$).
-  * *Validation (Poka-Yoke):* Title must be non-empty and unique. Numeric inputs must be strictly validated.
-  * *Output:* New quiz saved to database with unique auto-incremented `quiz_id`.
-* **FR-QM-02: Read / List Quizzes**
-  * *Description:* The system shall display all existing quizzes alongside aggregate question counts and configuration parameters.
-  * *Output:* Table/Treeview listing `id`, `title`, `description`, `time_limit_mins`, `pass_percentage`, and `question_count`.
-* **FR-QM-03: Update Quiz**
-  * *Description:* The instructor shall be able to modify the title, description, time limit, or pass cutoff of an existing quiz.
-  * *Validation:* Quiz ID must exist; title uniqueness constraint preserved.
-* **FR-QM-04: Delete Quiz (Cascade)**
-  * *Description:* The instructor shall be able to delete a quiz. Deleting a quiz shall automatically cascade and delete all associated questions to prevent orphan records.
-  * *Confirmation:* System requires explicit modal user confirmation before deletion.
+### 3.1 Module 1: Authentication & Account Management
+* **FR-AUTH-01 (Account Registration):** The system shall allow new students to self-register by providing a unique username, valid email, and secure password. Default role shall strictly be assigned as `student`.
+* **FR-AUTH-02 (Role-Based Authentication):** The system shall authenticate users via username/email and password. Upon successful verification, the user session shall store `user_id`, `username`, and `role`.
+* **FR-AUTH-03 (Session Invalidation & Logout):** Logging out shall immediately invalidate the server session, clear session cookies, and redirect the user to the login screen.
+* **FR-AUTH-04 (Role-Based Route Protection):** Protected routes shall strictly enforce role authorization via server decorators. Unauthorized access attempts shall trigger HTTP 403 Forbidden and record an audit event.
 
-### 3.2 Module 2: Question Bank Management (CRUD)
-* **FR-QB-01: Add Question**
-  * *Description:* The instructor shall be able to add multiple-choice questions (MCQs) to a designated quiz.
-  * *Input:* Quiz ID (FK), Question Text, Option A, Option B, Option C, Option D, Correct Option ('A', 'B', 'C', or 'D'), Marks (integer $\ge 1$).
-  * *Validation (Poka-Yoke):* All 4 options and question text must be populated. The correct option must strictly belong to the set $\{A, B, C, D\}$.
-* **FR-QB-02: Read Questions by Quiz**
-  * *Description:* The system shall filter and display all questions associated with the selected quiz in sequential order.
-* **FR-QB-03: Update Question**
-  * *Description:* The instructor shall be able to edit the question text, options, correct answer key, or mark allocation.
-* **FR-QB-04: Delete Question**
-  * *Description:* The instructor shall be able to delete individual questions from the quiz.
+### 3.2 Module 2: Password Recovery & Reset Lifecycle
+* **FR-PWD-01 (Password Reset Request):** A user shall be able to request a password reset by providing their registered email address. The system shall respond with a generic success confirmation to prevent user enumeration.
+* **FR-PWD-02 (Cryptographic Token Generation & Hashing):** The system shall generate a cryptographically secure token (minimum 32 URL-safe random bytes), compute its SHA-256 hash, and store the hash in `password_resets` with an expiration timestamp of $T + 15\text{ minutes}$.
+* **FR-PWD-03 (Token Consumption & Password Update):** When a user accesses `/reset-password/<token>`, the system shall verify the token hash, check that `expires_at > CURRENT_TIMESTAMP` and `used = 0`. Upon submitting a valid new password, the system shall update the user's password hash, mark `used = 1`, and terminate all existing active sessions for that user.
 
-### 3.3 Module 3: Student Portal & Examination Setup
-* **FR-ST-01: Student Identification Input**
-  * *Description:* The student shall enter their Full Name and Roll/Registration Number before beginning an assessment.
-  * *Validation (Poka-Yoke):* Blank inputs trigger an immediate alert modal and log an "Input Validation" defect to the TQM checksheet.
-* **FR-ST-02: Topic Selection & Overview**
-  * *Description:* The student shall select a quiz topic from an interactive dropdown. The system shall dynamically display the quiz description, time limit, and passing cutoff mark.
-* **FR-ST-03: Question Pre-Caching**
-  * *Description:* Upon clicking "Start Quiz", the system shall query all questions and keys for the selected quiz in a single read query and store them in an in-memory session structure (`list[dict]`), guaranteeing zero disk I/O during test progression.
+### 3.3 Module 3: Quiz Management (CRUD)
+* **FR-QM-01 (Create Quiz):** Authorized instructors and administrators shall be able to create a new quiz specifying `title`, `description`, `time_limit_mins` ($\ge 1$), and `pass_percentage` ($1.0 \le p \le 100.0$).
+* **FR-QM-02 (Read Quizzes):** The system shall list all quizzes with associated question counts, durations, and passing standards in an interactive catalog.
+* **FR-QM-03 (Update Quiz):** Instructors and administrators shall be able to update title, description, time limit, and pass percentage for an existing quiz.
+* **FR-QM-04 (Delete Quiz with Cascade):** Instructors and administrators shall be able to delete a quiz. Deleting a quiz shall cascade and delete all associated questions to maintain referential integrity.
 
-### 3.4 Module 4: In-Memory Quiz Delivery & Live Timer Engine
-* **FR-QE-01: Question Navigation**
-  * *Description:* The system shall present questions sequentially with options formatted as radio buttons, allowing students to navigate using "Next" and "Previous" buttons.
-* **FR-QE-02: Response State Buffering**
-  * *Description:* Selected options shall be stored in an in-memory hash map (`user_answers[question_id] = option`). Switching questions or returning to previous questions shall preserve the student's selections without loss.
-* **FR-QE-03: Clear Answer Capability**
-  * *Description:* A "Clear Answer" button shall allow students to deselect their choice for the current question and purge the corresponding key from the memory buffer.
-* **FR-QE-04: Non-Blocking Countdown Timer**
-  * *Description:* A real-time countdown timer shall display remaining minutes and seconds (`MM:SS`). The timer ticks every $1,000\text{ ms}$ via the event loop (`after()` handler) without blocking UI interactivity.
-* **FR-QE-05: Automated Expiry Submission**
-  * *Description:* When the timer reaches `00:00`, the system shall automatically trigger the submission pipeline, disabling input controls and submitting all recorded answers.
+### 3.4 Module 4: Question & Answer Bank Management (CRUD)
+* **FR-QB-01 (Create Question):** Authorized users shall be able to add multiple-choice questions (MCQs) to a quiz, supplying question text, 4 options (A, B, C, D), correct option choice ($\in \{A, B, C, D\}$), and marks allocation ($\ge 1$).
+* **FR-QB-02 (Read Questions):** Instructors and administrators shall be able to view all questions for a given quiz with designated correct options. Students taking the quiz shall receive question stems and options WITHOUT the correct option attribute.
+* **FR-QB-03 (Update Question):** Authorized users shall be able to update question text, options, correct option, and marks.
+* **FR-QB-04 (Delete Question):** Authorized users shall be able to delete an individual question.
 
-### 3.5 Module 5: Zero-Latency Submission & Automated Grading Engine
-* **FR-AG-01: Submission Debounce Lock (Poka-Yoke)**
-  * *Description:* When submission is initiated (manually or via timer expiry), the system shall immediately disable the "Submit" button and cancel active timer callbacks to prevent duplicate submissions.
-* **FR-AG-02: Instant In-Memory Auto-Grading**
-  * *Description:* The grading engine shall compare the buffered student answers against the preloaded correct option keys in memory.
-  * *Performance Constraint:* The entire grading calculation for up to 100 questions shall complete in under $1.0\text{ ms}$.
-* **FR-AG-03: Score & Status Computation**
-  * *Description:* The engine shall compute:
-    $$\text{Percentage} = \left(\frac{\sum \text{Scored Marks}}{\sum \text{Total Marks}}\right) \times 100$$
-    If $\text{Percentage} \ge \text{Pass Percentage}$, status is set to `"Passed"`; otherwise `"Failed"`.
-* **FR-AG-04: Instantaneous Scorecard Display**
-  * *Description:* The UI shall transition to the scorecard screen within $< 20\text{ ms}$, displaying the student's score, percentage, outcome status, and a detailed question-by-question breakdown table with correct keys and marks earned.
-* **FR-AG-05: Decoupled Database Persistence**
-  * *Description:* The attempt record shall be committed to the SQLite `attempts` table without stalling the display of the scorecard.
+### 3.5 Module 5: Student Examination Portal & Live Timer
+* **FR-AT-01 (Attempt Initialization):** An authenticated student selecting an eligible quiz shall initiate an attempt. The system shall generate a unique single-use `submission_token`, record `started_at`, and compute deadline timestamp.
+* **FR-AT-02 (Question Navigation):** Students shall navigate questions sequentially or via direct jump, with choices persisted across navigation events in an encrypted or session-backed buffer.
+* **FR-AT-03 (Live Countdown Timer):** A non-blocking client-side timer shall display remaining minutes and seconds. The server shall validate the submission deadline independently of client clocks.
+* **FR-AT-04 (Auto-Submit on Expiry):** When elapsed time exceeds the allotted duration, the system shall automatically freeze input controls and trigger submission.
 
-### 3.6 Module 6: Student Gradebook & Historical Results
-* **FR-GB-01: Historical Records View**
-  * *Description:* The system shall provide an administrative table displaying all historical student attempts, including timestamp, student name, roll number, quiz title, score, total marks, percentage, and pass/fail outcome.
-* **FR-GB-02: Summary Statistical Metrics**
-  * *Description:* The gradebook shall dynamically calculate and display total attempts, count of passed students, and aggregate pass rate percentage.
+### 3.6 Module 6: Answer Evaluation & Secure Score Calculation
+* **FR-GR-01 (Answer Key Confidentiality):** Evaluation shall take place exclusively on the server by querying the database's `correct_option` column.
+* **FR-GR-02 (Scoring Formula):** The grading engine shall evaluate:
+  $$\text{Score} = \sum_{q \in Q} (\text{Marks}_q \times \mathbb{I}(\text{Answer}_q == \text{CorrectOption}_q))$$
+  $$\text{Percentage} = \left(\frac{\text{Score}}{\sum_{q \in Q} \text{Marks}_q}\right) \times 100$$
+  $$\text{Status} = \begin{cases} \text{"Passed"}, & \text{if Percentage} \ge \text{PassPercentage} \\ \text{"Failed"}, & \text{otherwise} \end{cases}$$
+* **FR-GR-03 (Single-Submission Lock):** The engine shall acquire an atomic submission lock on the `submission_token`. Replay submissions shall be rejected with an informative notice.
+* **FR-GR-04 (Private Scorecard Display):** Upon successful grading, the system shall redirect the student to a private scorecard accessible solely via a one-time session token.
 
-### 3.7 Module 7: TQM Defect Logging & SQC Checksheets
-* **FR-TQ-01: Persistent Defect Checksheet**
-  * *Description:* The system shall maintain an audit trail table (`defect_logs`) storing all quality defects, categorized by type (Input Validation, Response Latency, Database Consistency, UI Usability, Grading Logic).
-* **FR-TQ-02: Poka-Yoke Automatic Logging**
-  * *Description:* When a user triggers an input validation constraint (e.g., attempting quiz start without roll number), the system shall automatically insert an audit record into `defect_logs` marked as resolved.
-* **FR-TQ-03: Manual Defect Recording Interface**
-  * *Description:* Instructors and TQM auditors shall be able to log manual defects, assign severity ratings (Low, Medium, High, Critical), and update resolution status (Open, In Progress, Resolved) to support the Deming PDCA cycle.
+### 3.7 Module 7: Result Management & Historical Gradebook
+* **FR-RES-01 (Personal Attempt History):** Authenticated students shall be able to review their own past quiz attempts, scores, percentages, and pass/fail statuses.
+* **FR-RES-02 (Instructor Gradebook View):** Instructors and administrators shall be able to inspect all student attempts across quizzes, with sorting and filtering by quiz ID.
+* **FR-RES-03 (Access Boundaries):** Students attempting to view other students' result IDs shall be denied access (HTTP 403 / 404).
 
-### 3.8 Module 8: Dual Execution Architecture (GUI & CLI)
-* **FR-DE-01: Terminal CLI Fallback**
-  * *Description:* If invoked with `--cli` or when Tkinter graphical libraries are absent, the application shall launch an interactive menu-driven console interface supporting all student and administrative functions.
+### 3.8 Module 8: Security Audit Trail & Event Logging
+* **FR-AUD-01 (Security Event Recording):** The system shall log security-relevant transactions into `audit_logs`, including:
+  - `AUTH_LOGIN_SUCCESS`, `AUTH_LOGIN_FAILURE`, `AUTH_LOGOUT`
+  - `PASSWORD_RESET_REQUESTED`, `PASSWORD_RESET_COMPLETED`, `PASSWORD_RESET_INVALID`
+  - `QUIZ_CREATED`, `QUIZ_UPDATED`, `QUIZ_DELETED`
+  - `QUESTION_CREATED`, `QUESTION_UPDATED`, `QUESTION_DELETED`
+  - `QUIZ_ATTEMPT_SUBMITTED`
+  - `UNAUTHORIZED_ACCESS_ATTEMPT`
+* **FR-AUD-02 (Audit Trail Metadata):** Each audit record shall capture `timestamp`, `event_type`, `actor_username`, `actor_role`, `target_entity`, `outcome`, `ip_address`, and `details`.
+* **FR-AUD-03 (Audit Trail Protection):** The audit log shall be append-only. Only users with the `admin` role shall have permission to view the audit log. Plaintext passwords and secret tokens shall NEVER be logged.
 
 ---
 
-## 4.0 Non-Functional Requirements (NFRs)
+## 4.0 Security Requirements (SEC)
 
-### 4.1 Latency & Real-Time Performance Thresholds
-* **NFR-LAT-01 (Submission-to-Display Latency):** The total elapsed time between user submission confirmation (or timer expiry) and the visual presentation of the scorecard on screen shall not exceed **100 milliseconds** (Target: $< 20\text{ ms}$ on standard desktop hardware).
-* **NFR-LAT-02 (Grading Algorithm Latency):** In-memory answer matching and score computation shall execute in $< 1\text{ ms}$ for quizzes up to 100 questions.
-* **NFR-LAT-03 (Database Commit Latency):** Individual transaction writes into SQLite `attempts` shall complete within $< 15\text{ ms}$ using Write-Ahead Logging (WAL).
-* **NFR-LAT-04 (UI Responsiveness):** Frame dispatch and question navigation transitions shall maintain 60 FPS (latency $< 16.6\text{ ms}$ per navigation click).
+### 4.1 Role-Based Access Control & Privilege Escalation Defense
+* **SEC-RBAC-01:** Authorization checks shall be performed server-side on every restricted route. Client-side UI controls (such as hiding buttons) shall be treated solely as ergonomic enhancements.
+* **SEC-RBAC-02:** User role assignment shall be protected. Self-registration shall strictly enforce `role = 'student'`. Elevation to `instructor` or `admin` shall require administrative credentials or pre-configured database seeding.
+* **SEC-RBAC-03:** Insecure Direct Object References (IDOR) shall be prevented by validating that accessed attempt records belong to the currently logged-in student or an authorized instructor/admin.
 
-### 4.2 Throughput & Capacity
-* **NFR-TP-01:** The local database shall support storage of at least $10,000$ quiz attempts and $1,000$ questions without performance degradation in retrieval queries.
-* **NFR-TP-02:** Startup time of the application shall be $< 1.5\text{ seconds}$ from terminal command execution to initial screen render.
+### 4.2 Password Hashing & Sensitive Data Protection
+* **SEC-CRY-01:** User passwords shall never be stored in plaintext or reversible encryption. Passwords shall be hashed using modern cryptographic hash functions with unique per-password salts (`scrypt` or `pbkdf2:sha256` via Werkzeug security primitives).
+* **SEC-CRY-02:** Application secrets (e.g., `FLASK_SECRET_KEY`) shall be loaded from environment variables and never committed to source control repositories.
+* **SEC-CRY-03:** Sensitive database fields such as `password_hash` shall be excluded from all public API outputs, templates, and logs.
 
-### 4.3 Reliability, Availability & Fault Tolerance
-* **NFR-REL-01 (Zero Data Loss Guarantee):** Any completed quiz submission that has reached the grading engine must be recorded to the database. If an unexpected shutdown occurs during UI render, the data remains committed.
-* **NFR-REL-02 (Graceful Degradation):** Absence of the graphical X11/Tkinter subsystem shall not crash the application; it shall immediately switch to CLI mode.
-* **NFR-REL-03 (Timer Precision):** The countdown timer drift shall not exceed $\pm 1\text{ second}$ over a 60-minute examination period.
+### 4.3 Input Validation, Sanitization & Safe Parameterization
+* **SEC-VAL-01:** All user inputs (registration, login, quiz title, questions, options, marks, answers) shall be validated server-side for length, type, character set, and range limits.
+* **SEC-VAL-02:** Database queries shall strictly use parameterized SQL placeholders (`?`) to prevent SQL injection vulnerabilities.
+* **SEC-VAL-03:** Rendered HTML output shall be auto-escaped by the Jinja2 template engine to prevent Cross-Site Scripting (XSS). User inputs shall never be rendered using `|safe` unless sanitized against strict HTML whitelists.
 
-### 4.4 Data Integrity & ACID Compliance
-* **NFR-INT-01 (Atomicity & Durability):** All attempt writes and quiz creations are transactional. If a failure occurs mid-transaction, changes are fully rolled back.
-* **NFR-INT-02 (Referential Integrity):** SQLite foreign key constraints (`PRAGMA foreign_keys = ON`) must be enforced on all question and attempt records.
+### 4.4 Anti-CSRF & Session Security
+* **SEC-SES-01:** All state-changing HTTP requests (POST, PUT, DELETE) shall require a valid Anti-CSRF synchronizer token matching the token stored in the authenticated user session.
+* **SEC-SES-02:** Session cookies shall have `HttpOnly=True` to prevent JavaScript cookie theft and `SameSite=Lax` to prevent cross-site request leakage. When deployed under HTTPS, `Secure=True` shall be enforced.
+* **SEC-SES-03:** The system shall regenerate or rotate session identifiers upon successful authentication to eliminate session fixation risks.
 
-### 4.5 Usability & Poka-Yoke Error Proofing
-* **NFR-USA-01 (Mistake-Proofing):** Users must be blocked from submitting blank names or submitting identical forms twice.
-* **NFR-USA-02 (Ergonomic UI Design):** All interactive buttons must have minimum padding of $6\text{ px}$, clear visual color coding (Blue for Navigation, Green for Success/Action, Red for Danger/Submit), and readable typography ($\ge 10\text{ pt}$ Helvetica).
-
-### 4.6 Maintainability, Portability & Code Standards
-* **NFR-MNT-01:** Source code shall adhere to PEP 8 formatting standards and modular file separation (`main.py`, `gui.py`, `database.py`).
-* **NFR-MNT-02:** Zero external binary dependencies beyond Python standard libraries and standard Tk bindings.
+### 4.5 Answer Key Confidentiality & Anti-Cheat Boundary
+* **SEC-KEY-01:** The `correct_option` attribute shall NEVER be rendered in client HTML, serialized into JavaScript variables, or sent in JSON responses while a quiz is active.
+* **SEC-KEY-02:** Question submissions shall be timestamped and compared against `started_at + time_limit_seconds`. Submissions arriving after deadline shall be flagged and graded with expired state.
 
 ---
 
-## 5.0 Critical-to-Quality (CTQ) Parameters & Quality Standards
+## 5.0 Non-Functional Requirements (NFR)
 
-To operationalize the principles of Total Quality Management, requirements are mapped from the Voice of the Customer (VOC) to measurable CTQ metrics:
+### 5.1 Performance & Response Latency
+* **NFR-PERF-01:** Score calculation and scorecard rendering shall complete in under $50\text{ ms}$ upon submission.
+* **NFR-PERF-02:** Page load time for quiz catalog and question screens shall be under $200\text{ ms}$ on local and broadband connections.
 
-### 5.1 Voice of Customer (VOC) to CTQ Tree Translation
+### 5.2 Reliability, Availability & Fault Tolerance
+* **NFR-REL-01:** The system shall guarantee zero data loss for completed quiz submissions through transactional SQLite commits.
+* **NFR-REL-02:** In the event of network disruption during a quiz, students' previously submitted answers shall remain intact in server session storage.
 
-```
-+───────────────────────+────────────────────────+──────────────────────────+──────────────────────────────+
-| Voice of Customer     | Quality Need           | Critical-to-Quality (CTQ)| Measurable Operational Target|
-| (Stakeholder VOC)     | (System Feature)       | Driver                   | & Specification Limit        |
-+───────────────────────+────────────────────────+──────────────────────────+──────────────────────────────+
-| "I hate waiting when  | Instantaneous Quiz     | Submission Response      | Measured Latency < 100 ms    |
-| I click submit; the   | Submission Pipeline    | Latency                  | (Target: < 20 ms)            |
-| system must not lag." |                        |                          | Zero UI freeze during submit |
-+───────────────────────+────────────────────────+──────────────────────────+──────────────────────────────+
-| "My test marks and    | Exact In-Memory        | Grading Accuracy &       | 100% Evaluation Accuracy     |
-| percentage must be    | Evaluation Engine      | Score Calculation        | Defect Rate = 0 DPMO         |
-| 100% accurate."       |                        | Precision                | Exact key comparison         |
-+───────────────────────+────────────────────────+──────────────────────────+──────────────────────────────+
-| "I shouldn't be able  | Poka-Yoke Validation   | Duplicate & Erroneous    | 0 duplicate attempts allowed |
-| to accidentally submit| & Single-Submission    | Submission Prevention    | Single-submission lock active|
-| twice or leave blanks"| Button Lock            |                          | Mandatory input enforcement  |
-+───────────────────────+────────────────────────+──────────────────────────+──────────────────────────────+
-| "I need to see which  | Comprehensive Result   | Information Completeness | 100% question breakdown      |
-| questions I got wrong | Breakdown & Review     | & Transparency           | Correct key vs user choice   |
-| immediately."         | Card                   |                          | Marks awarded per question   |
-+───────────────────────+────────────────────────+──────────────────────────+──────────────────────────────+
-| "The app must work    | Robust Dual Runtime    | Portability & Fault      | Zero fatal crashes on launch |
-| even if graphics      | Architecture (Tkinter  | Tolerance                | Auto CLI fallback if Tkinter |
-| libraries are missing"| + CLI fallback)        |                          | is absent                    |
-+───────────────────────+────────────────────────+──────────────────────────+──────────────────────────────+
-```
+### 5.3 Data Integrity & ACID Persistence
+* **NFR-INT-01:** All write operations shall adhere to ACID transaction properties. Deleting a quiz shall cascade to questions and preserve foreign key referential integrity (`PRAGMA foreign_keys = ON`).
 
-### 5.2 Six Sigma Quality Objectives
-* **Defect Rate Target:** $< 3.4$ Defects Per Million Opportunities (DPMO) in score computation and submission queuing.
-* **Process Capability ($C_{pk}$):** Submission response time process capability index $C_{pk} \ge 1.67$, ensuring the upper specification limit ($100\text{ ms}$) is continuously met.
-* **Data Yield:** $100\%$ zero-loss yield for all submitted attempt records.
+### 5.4 Usability & Poka-Yoke Mistake-Proofing
+* **NFR-USA-01:** Forms shall provide clear, actionable error feedback without exposing system internals or stack traces.
+* **NFR-USA-02:** Submit buttons shall be locked upon click to eliminate accidental duplicate requests.
 
-### 5.3 Poka-Yoke (Mistake-Proofing) Rules
-1. **Rule 1 (Identity Gate):** Student Full Name and Roll Number input fields must contain non-whitespace characters before the quiz screen is rendered.
-2. **Rule 2 (Empty Quiz Gate):** Quizzes with 0 questions cannot be launched; an informative warning modal is presented.
-3. **Rule 3 (Option Integrity Gate):** Adding a question requires all 4 options and a valid correct option selection ($\in \{A, B, C, D\}$).
-4. **Rule 4 (Debounce Gate):** Clicking the submit button immediately disables it, preventing double clicks and race conditions.
+### 5.5 Maintainability & Code Quality
+* **NFR-MNT-01:** Codebase shall adhere to PEP 8 style standards with modular separation between `database.py`, `app.py`, `gui.py`, and `main.py`.
+* **NFR-MNT-02:** Minimum 30 meaningful Git commits tracking incremental architectural evolution.
 
 ---
 
-## 6.0 Software Dependencies & Environment Setup
+## 6.0 Interface, Data & Privacy Requirements
 
-### 6.1 Core Runtime & Tooling
-* **Python Runtime:** Python 3.10.x, 3.11.x, 3.12.x, 3.13.x, or 3.14.x.
-* **Operating System Shell:** Bash (Linux/macOS), PowerShell / Command Prompt (Windows).
-* **Source Control:** Git 2.30+ and GitHub Desktop.
-* **IDE:** Visual Studio Code with Python Extension.
+### 6.1 User Interface Requirements
+* Responsive layout compatible with desktop monitors and mobile displays ($360\text{px}$ to $1920\text{px}$).
+* Accessible color contrast adhering to WCAG 2.1 AA standards with optional high-contrast theme toggle.
 
-### 6.2 Python Standard & Third-Party Libraries
-The base system is designed intentionally with zero heavy third-party bloat to maximize execution speed and minimize dependency failure modes:
+### 6.2 Data Requirements & Schema Relationships
+* Entities: `users`, `password_resets`, `quizzes`, `questions`, `attempts`, `audit_logs`, `defect_logs`.
+* Relationships:
+  - 1 User to Many Password Resets (1:N)
+  - 1 User to Many Attempts (1:N)
+  - 1 Quiz to Many Questions (1:N, Cascade on Delete)
+  - 1 Quiz to Many Attempts (1:N)
 
-| Package / Module | Category | Minimum Version | Functional Purpose |
-| :--- | :--- | :--- | :--- |
-| `tkinter` / `tkinter.ttk` | Standard GUI | Python 3 built-in | Responsive GUI frontend, themed widgets, Treeviews |
-| `sqlite3` | Database Engine | Python 3 built-in | ACID-compliant local relational persistence |
-| `os`, `sys`, `datetime` | System Utilities | Python 3 built-in | Path resolution, CLI parsing, audit timestamps |
-| `pandas` *(Review 4 extension)*| Data Analytics | 2.0+ (Optional) | SQC analysis and statistical calculations |
-| `matplotlib` / `seaborn` *(Review 4)*| Charting | 3.7+ (Optional) | Generation of Pareto & Ishikawa Fishbone charts |
-
-### 6.3 Installation & Configuration Verification
-
-#### Linux / Ubuntu Environment Setup
-```bash
-# 1. Update package manager
-sudo apt update
-
-# 2. Install Python 3 and Tkinter graphical toolkit
-sudo apt install -y python3 python3-tk python3-pip
-
-# 3. Verify Python and Tkinter installation
-python3 -c "import tkinter; print('Tkinter successfully loaded, version:', tkinter.TkVersion)"
-python3 -c "import sqlite3; print('SQLite3 successfully loaded, version:', sqlite3.sqlite_version)"
-```
-
-#### Windows & macOS Setup
-* Download and install the official Python 3 installer from [python.org](https://www.python.org/).
-* Ensure the **"tcl/tk and IDLE"** checkbox is enabled during installation.
-
-#### Launching the Application
-```bash
-# Graphical Mode (Primary)
-python3 main.py
-
-# Headless / Terminal Fallback Mode (CLI)
-python3 main.py --cli
-```
+### 6.3 Privacy & Data Protection Requirements
+* Passwords hashed via non-reversible adaptive hashing.
+* Student attempt records accessible exclusively by the examinee and authorized faculty/admin.
+* No personal data or credentials leaked into logs.
 
 ---
 
-## 7.0 Document Approvals & Sign-Off
+## 7.0 Deployment, Testing & Acceptance Criteria
 
-| Role | Name | Signature / Status | Date |
-| :--- | :--- | :--- | :--- |
-| **Lead Developer** | Krutika Agrawal (AU-24-5942) | *Submitted for Review 1* | October 2026 |
-| **Course Instructor** | Faculty Evaluator (BBAT104) | *Pending Review 1 Viva* | October 2026 |
-| **TQM Auditor** | Internal Quality Assurance | *Audited & Approved* | October 2026 |
+### 7.1 Deployment Environment & Constraints
+* Target Runtime: Python 3.10+ on Linux / Windows / macOS.
+* Production WSGI Application Server: Gunicorn or Waitress.
+* Database: SQLite3 with Write-Ahead Logging (WAL).
+* Transport: HTTPS with strict TLS in cloud environments.
+
+### 7.2 Verification & Testing Strategy
+* Automated unit tests covering all authentication routes, RBAC boundaries, CRUD operations, password reset lifecycle, input bounds, and audit logging.
+* Regression testing ensuring 100% pass rate across the full test suite.
+
+### 7.3 Formal Acceptance Criteria
+1. **Review 1 Deliverables:** GitHub repository verified, System Architecture Flowchart complete, SRS document complete with unique IDs, Scope definition complete, README aligned.
+2. **Review 2 Deliverables:** Working CRUD for Quizzes and Questions; all five Q04 security features functioning with empirical test verification.
+3. **Zero Critical Vulnerabilities:** No unparameterized queries, no plaintext passwords, no exposed answer keys.
+
+### 7.4 Assumptions, Dependencies & Limitations
+* **Assumptions:** Local system has Python 3.10+ installed; email notifications utilize local token retrieval for environments without external SMTP credentials.
+* **Dependencies:** Python standard libraries, Flask >= 3.0.0, Werkzeug >= 3.0.0.
+* **Limitations:** Database-at-rest encryption relies on underlying OS/disk encryption (LUKS/BitLocker); SQLite file is secured via file permissions.

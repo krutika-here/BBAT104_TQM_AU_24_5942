@@ -1,51 +1,65 @@
-# Online Quiz System (BBAT104 TQM Course Project)
+# Secure Online Quiz System (BBAT104 TQM Project)
 
 [![Python Version](https://img.shields.io/badge/Python-3.10%2B-blue.svg)](https://www.python.org/)
 [![Database](https://img.shields.io/badge/Database-SQLite3-green.svg)](https://www.sqlite.org/)
-[![GUI Framework](https://img.shields.io/badge/GUI-Tkinter%2FTTK-orange.svg)](https://docs.python.org/3/library/tkinter.html)
+[![Web Framework](https://img.shields.io/badge/Framework-Flask%203.x-lightgrey.svg)](https://flask.palletsprojects.com/)
 [![Course](https://img.shields.io/badge/Course-BBAT104%20TQM-purple.svg)](#academic-information)
-[![Review Milestone](https://img.shields.io/badge/Milestone-Review%201%20Complete-brightgreen.svg)](#review-1-deliverables-summary)
-[![Quality Goal](https://img.shields.io/badge/Quality%20Goal-Zero%20Latency%20Submissions-red.svg)](#core-quality-goal)
+[![Milestone](https://img.shields.io/badge/Milestone-Review%201%20%26%202%20Active-brightgreen.svg)](#evaluation-milestones)
+[![Quality Goal](https://img.shields.io/badge/Quality%20Goal-Q04%20Improve%20Security-red.svg)](#assigned-quality-goal-q04--improve-security)
 
-An automated, high-performance computer-based testing platform developed for the **BBAT104 – Fundamentals of Total Quality Management (TQM)** course project. Built with Python 3, Tkinter/TTK, and SQLite3, this system couples core CRUD assessment management with a specialized **in-memory evaluation pipeline** designed to eliminate submission delays and deliver instantaneous score generation.
+An enterprise-grade, secure Computer-Based Assessment (CBA) system built for the **BBAT104 – Fundamentals of Total Quality Management (TQM)** academic curriculum. The platform pairs complete assessment CRUD operations with comprehensive Defense-in-Depth application security controls under assigned Quality Goal **Q04 — Improve Security**.
 
 ---
 
 ## Academic Information
 
 * **Course Code & Name:** BBAT104 – Fundamentals of Total Quality Management (TQM)
-* **Academic Session:** 2026–27
+* **Academic Session:** 2026–2027
+* **Candidate Roll Number:** 39
 * **Candidate Name:** Krutika Agrawal
-* **University Registration / Roll Number:** AU-24-5942
-* **Assigned Topic Digit:** **Digit 9** – Online Quiz System
-* **Assigned Quality Goal:** **Ensure zero latency during submissions & auto-grading**
+* **University Registration Number:** AU-24-5942
+* **Assigned Baseline System:** **Digit 9** – Online Quiz System
+* **Assigned Quality Goal:** **Q04 — Improve Security**
+* **Core Objective:** Ensure secure quiz submissions, protect user data, and prevent unauthorized access
 * **Project Repository:** `BBAT104_TQM_AU_24_5942`
+* **Current Evaluation Scope:** Review 1 (Setup & SRS — 10 Marks) and Review 2 (Base System & CRUD — 15 Marks)
 
 ---
 
-## Core Quality Goal
+## Assigned Quality Goal: Q04 — Improve Security
 
-> **"Ensure zero latency during submissions & auto-grading"**
+In accordance with official BBAT104 project guidelines, Roll Number 39 maps to Baseline System 9 (Online Quiz System), with sequential allocation **Q04 — Improve Security**. The system implements all five designated security modules:
 
-In conventional assessment platforms, the submission phase is plagued by high latency ($500\text{ ms} - 3000\text{ ms}$) caused by blocking database locks, synchronous network round-trips, and sequential server-side evaluation. This delay causes user stress, double-submission race conditions, and unresponsive user interfaces.
+1. **Role-Based Login (RBAC):** Server-enforced role separation across **Administrator**, **Quiz Creator / Instructor**, and **Student** accounts, protected by `@role_required` decorators, session fixation defense, and Anti-CSRF synchronizer tokens.
+2. **Password Reset:** Cryptographically randomized (32-byte URL-safe) single-use tokens stored as SHA-256 hashes with 15-minute expiration windows, rate limiting, and session revocation upon password update.
+3. **Input Validation:** Multi-layered server-side type and bounds checking, parameterized SQLite queries to eliminate SQL injection, and Jinja2 contextual auto-escaping to prevent Cross-Site Scripting (XSS).
+4. **Audit Trail:** Append-only security audit log (`audit_logs`) capturing authentication events, permission violations, password resets, and CRUD operations with timestamps, actor IDs, outcomes, and IP references.
+5. **Encryption & Sensitive Data Protection:** Adaptive salted password hashing using Werkzeug/Python cryptographic primitives (PBKDF2/scrypt), environment-based secret key isolation (`FLASK_SECRET_KEY`), HTTPS-ready session cookie headers (`HttpOnly=True`, `SameSite=Lax`), and strict server-side quarantine of answer keys.
 
-This system guarantees **zero perceptible latency** ($< 20\text{ ms}$ turnaround, far below the human perception limit of $100\text{ ms}$) through:
-1. **In-Memory Question & Key Caching:** Pre-fetching questions and answer keys into RAM (`list[dict]`) upon quiz initialization, eliminating disk reads during testing.
-2. **Sub-Millisecond In-Memory Auto-Grading:** Comparing student responses against answer keys directly in CPU registers with $O(1)$ lookup complexity per question (execution time $< 0.5\text{ ms}$).
-3. **Decoupled Asynchronous Persistence:** Immediate rendering of the scorecard on the UI thread while offloading database writes to SQLite with Write-Ahead Logging (WAL).
-4. **Poka-Yoke Debounce Locks:** Instantly deactivating submission triggers upon execution to eliminate duplicate submission defects.
+---
+
+## Evaluation Milestones
+
+| Milestone / Deliverable | Raw Marks | Status | Required Artefacts |
+| :--- | :---: | :---: | :--- |
+| **Review 1: Setup & SRS** | 10 Marks | **Complete** | GitHub Repository verification, [System Architecture Flowchart](docs/ARCHITECTURE.md), [SRS Document](docs/SRS.md), and [Scope Definition](docs/SCOPE.md). |
+| **Review 2: Base System & CRUD** | 15 Marks | **Active** | Full CRUD for Quizzes and Questions; interactive student examination engine; 5 Q04 security features. |
+| **Review 3: FMEA & Risk Audit** | 15 Marks | *Future Scope* | FMEA Matrix with RPN calculations, SIPOC Process Map, CTQ Tree, and Defect Logging checksheets. |
+| **Review 4: SQC & Continuous Improvement**| 15 Marks | *Future Scope* | 80/20 Pareto Analysis, Ishikawa Fishbone Root-Cause Diagram, and PDCA Cycle tracking logs. |
+| **Final Demo & Viva** | 10 Marks | *Future Scope* | Live application defense, security audit walkthrough, and oral viva. |
+| **Documentation & GitHub Health** | 5 Marks | **Active** | Interactive README, $\ge 30$ meaningful Git commits, and clean version control sync. |
 
 ---
 
 ## Review 1 Deliverables Summary
 
-The complete set of formal technical deliverables for **Review 1: Setup & SRS (CO1 Mapped - 10 Marks)** is documented and maintained directly within the repository:
+The technical specifications governing the architecture and functional scope are maintained in `docs/`:
 
 | Deliverable Document | Direct File Link | Primary Purpose & Key Coverage |
 | :--- | :--- | :--- |
-| **System Architecture Flowchart** | [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | Multi-tier architecture design, Mermaid.js and ASCII data flowcharts, in-memory queue design, sequence diagrams, and zero-latency latency budget analysis. |
-| **Software Requirements Specification (SRS)** | [docs/SRS.md](docs/SRS.md) | Formal IEEE 830-aligned specification with functional requirements (FR-01 to FR-08), strict non-functional thresholds ($<100\text{ ms}$ SLA), CTQ Tree, and Six Sigma quality targets. |
-| **Scope Definition Document** | [docs/SCOPE.md](docs/SCOPE.md) | Exact project boundaries (In-Scope vs. Out-of-Scope), Role-Based Access Control (RBAC) matrix, Poka-Yoke access guards, and the 4-phase BBAT104 milestone roadmap. |
+| **System Architecture Flowchart** | [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) | Multi-tier architecture, Mermaid flowcharts, authentication sequence diagrams, state transitions, ER schema, and security boundaries. |
+| **Software Requirements Specification (SRS)** | [`docs/SRS.md`](docs/SRS.md) | IEEE 830-aligned specification with functional requirements (`FR-xx`), security requirements (`SEC-xx`), non-functional requirements (`NFR-xx`), and formal acceptance criteria. |
+| **Scope Definition Document** | [`docs/SCOPE.md`](docs/SCOPE.md) | Exact project boundaries, Role-Based Access Control matrix, CRUD entity governance, explicit exclusions, and risk mitigations. |
 
 ---
 
@@ -54,195 +68,182 @@ The complete set of formal technical deliverables for **Review 1: Setup & SRS (C
 ```
 BBAT104_TQM_AU_24_5942/
 ├── docs/
-│   ├── ARCHITECTURE.md     # System Architecture & Zero-Latency Data Flow Design
+│   ├── ARCHITECTURE.md     # System Architecture & Technical Design Document
 │   ├── SRS.md              # Software Requirements Specification (IEEE 830 Aligned)
 │   └── SCOPE.md            # Project Scope Definition & Governance Matrix
-├── .gitignore              # Git ignore rules for Python bytecode and OS files
-├── database.py             # SQLite3 schema definition, CRUD operations & TQM defect log
-├── gui.py                  # Tkinter/TTK multi-screen graphical user interface
-├── main.py                 # Application entry point with dual GUI and CLI fallback modes
-├── quiz_system.db          # Persistent SQLite3 database (quizzes, questions, attempts, defects)
-└── README.md               # Repository documentation and setup manual
+├── static/
+│   ├── css/
+│   │   └── style.css       # Responsive styling, theme variables, and accessible components
+│   └── js/
+│       └── main.js         # Client-side countdown timer, autosave, and accessible UI helpers
+├── templates/              # Jinja2 HTML5 templates
+│   ├── base.html           # Shared master layout with navigation, flash alerts, and CSRF token
+│   ├── index.html          # Quiz catalogue dashboard & portal landing
+│   ├── quizzes.html        # Public quiz catalog list
+│   ├── quiz_details.html   # Quiz metadata, duration, instructions, and start form
+│   ├── quiz_question.html  # Interactive question viewer with timer and answer selection
+│   ├── attempt_result.html # Session-private student scorecard
+│   ├── login.html          # Secure role-based login form
+│   ├── register.html       # Student self-registration form
+│   ├── forgot_password.html# Password recovery request form
+│   ├── reset_password.html # Password reset token verification and update form
+│   ├── quiz_manage.html    # Instructor / Admin Quiz CRUD management panel
+│   ├── question_manage.html# Instructor / Admin Question CRUD management panel
+│   ├── results_manage.html # Role-delimited results & gradebook viewer
+│   ├── audit_logs.html     # Administrator-only security audit trail viewer
+│   └── placeholder.html    # Future review milestone placeholder view
+├── tests/
+│   ├── __init__.py
+│   └── test_app.py         # Automated unit, CRUD, and security test suite
+├── .gitignore              # Git exclusions (caches, virtualenvs, local databases)
+├── app.py                  # Primary Flask WSGI web application controllers and routes
+├── database.py             # SQLite persistence, schema migrations, and parameterized queries
+├── gui.py                  # Preserved Tkinter desktop GUI application (fallback)
+├── main.py                 # Preserved CLI runner and desktop launcher
+├── quiz_system.db          # SQLite3 database (quizzes, questions, users, attempts, audit logs)
+├── requirements.txt        # Production dependency specifications
+└── README.md               # Main project manual, setup guide, and documentation
 ```
 
 ---
 
-## System Architecture & Data Flow
+## System Architecture Flowchart
 
 ```mermaid
 flowchart TD
-    subgraph Client["1. Presentation Layer"]
-        UI["Student Quiz Portal (gui.py)"]
-        ADMIN["Admin CRUD Panel"]
-        AUDIT["TQM Defect Checksheet UI"]
+    subgraph Presentation["Presentation Tier (Browser & Fallbacks)"]
+        Browser["Web Browser (HTML5 / CSS3 / Accessible UI)"]
         CLI["Terminal CLI Fallback (main.py)"]
+        Tkinter["Tkinter Desktop GUI (gui.py)"]
     end
 
-    subgraph Memory["2. In-Memory Runtime Engine (RAM)"]
-        CACHE["Questions & Keys Cache"]
-        STATE["User Answers Hash Map"]
-        TIMER["Non-blocking Countdown Timer"]
+    subgraph SecurityGateway["Security & Interceptor Tier"]
+        HTTPS["HTTPS Transport & Secure Cookies"]
+        CSRFGuard["Anti-CSRF Synchronizer Token Guard"]
+        RBACGuard["Role-Based Access Control (@role_required)"]
+        InputFilter["Strict Server-Side Input Validation"]
     end
 
-    subgraph Core["3. Zero-Latency Auto-Grading Engine"]
-        GATE["Poka-Yoke Debounce Lock"]
-        EVAL["O(1) Memory Key Matcher (< 0.5ms)"]
-        SCORE["Score & Percentage Calculator"]
-        CARD["Instant Scorecard Display (< 20ms)"]
+    subgraph Controllers["Application & Routing Controllers (Flask)"]
+        AuthCtrl["Auth & Password Recovery Controller"]
+        QuizCtrl["Quiz & Question CRUD Controller"]
+        ExamEngine["Quiz Delivery & Grading Engine"]
+        ResultCtrl["Role-Delimited Gradebook Controller"]
+        AuditCtrl["Security Audit Trail Viewer (Admin Only)"]
     end
 
-    subgraph Storage["4. Persistence Layer"]
-        QUEUE["Async In-Memory Queue"]
-        DB[("SQLite Database: quiz_system.db")]
+    subgraph Persistence["Persistence & Security Core"]
+        CryptoEngine["Password Hasher (scrypt/PBKDF2) & Token Hasher (SHA-256)"]
+        AuditService["Append-Only Security Audit Logger"]
+        DB[("SQLite3 Database (quiz_system.db)<br/>WAL Mode & Foreign Key Cascades")]
     end
 
-    UI -->|Start Quiz| CACHE
-    UI -->|Select Option| STATE
-    TIMER -->|Time Expiry (00:00)| GATE
-    UI -->|Submit Button Click| GATE
-    GATE -->|Validated| EVAL
-    CACHE -.->|Answer Key| EVAL
-    STATE -.->|Choices| EVAL
-    EVAL --> SCORE
-    SCORE -->|Instant Feedback| CARD
-    SCORE -->|Enqueue Attempt| QUEUE
-    QUEUE -->|Background WAL Commit| DB
-    ADMIN -->|CRUD Quizzes & Questions| DB
-    AUDIT -->|Defect Checksheet Events| DB
-    CLI -->|Console Operations| DB
+    Browser -->|HTTP Requests| HTTPS
+    HTTPS --> CSRFGuard
+    CSRFGuard --> RBACGuard
+    RBACGuard --> InputFilter
+    InputFilter --> Controllers
+
+    AuthCtrl --> CryptoEngine
+    AuthCtrl --> AuditService
+    QuizCtrl --> AuditService
+    ExamEngine --> AuditService
+    AuditCtrl --> AuditService
+
+    AuthCtrl --> DB
+    QuizCtrl --> DB
+    ExamEngine --> DB
+    ResultCtrl --> DB
+    AuditService --> DB
 ```
 
-### Empirical Latency Comparison
-
-| Processing Stage | Conventional Synchronous System | In-Memory Zero-Latency Pipeline |
-| :--- | :--- | :--- |
-| Answer Extraction | Form parsing ($5\text{ ms}$) | In-Memory Dict ($0.1\text{ ms}$) |
-| Key Retrieval | Disk SQL Query ($45\text{ ms}$) | Preloaded RAM ($0.0\text{ ms}$) |
-| Grading Logic | Sequential Evaluation ($80\text{ ms}$) | CPU In-Memory Comparator ($0.4\text{ ms}$) |
-| Persistence | Blocking Write ($120\text{ ms}$) | Decoupled Async / Fast WAL ($8\text{ ms}$) |
-| Scorecard Render | Post-commit ($50\text{ ms}$) | Instantaneous UI Transition ($10\text{ ms}$) |
-| **Total Perceived Latency** | **300.0 ms (Noticeable Delay)** | **10.55 ms (Zero Perceptible Lag)** |
-
 ---
 
-## Core System Features
-
-1. **Student Quiz Portal:** Clean, streamlined identification interface with built-in Poka-Yoke validation to prevent blank name/roll submissions.
-2. **Interactive Timed Quiz Engine:** Pre-cached question navigation with live countdown timer, answer selection tracking, and clear answer support.
-3. **Instant Automated Grading:** Real-time answer evaluation against correct keys with sub-millisecond scoring and instant scorecard display.
-4. **Detailed Result Breakdown:** Comprehensive scorecard table showing question text, student's selected option, correct answer key, and marks awarded.
-5. **Full Admin CRUD Capabilities:**
-   * **Quizzes:** Create new assessments, configure durations and pass marks, list existing tests, update parameters, and delete with cascade cleanup.
-   * **Questions:** Add 4-option multiple-choice questions, set answer keys, adjust mark weights, and delete obsolete questions.
-6. **Student Results History & Gradebook:** Historical log of all test attempts with dynamic calculation of total attempts, passing count, and pass percentage rate.
-7. **TQM Defect Checksheet & Audit Log:** Digital checksheet tracking software defects across categories (Input Validation, Response Latency, Database Consistency, UI Usability, Grading Logic) with severity ratings (Low, Medium, High, Critical) and PDCA status tracking.
-8. **Dual Runtime Interface:** Full desktop GUI (Tkinter/TTK) with automatic, graceful fallback to an interactive command-line interface (`main.py --cli`) for headless environments.
-
----
-
-## Local Setup & Run Instructions
+## Quickstart & Installation Guide
 
 ### Prerequisites
-* **Python:** Version 3.10 or higher.
-* **Tkinter:** Python graphical toolkit.
-* **Operating System:** Ubuntu/Debian Linux, Windows 10/11, or macOS.
+* **Python:** Python 3.10 or higher.
+* **Git:** Version 2.30+.
+* **Virtual Environment:** Python standard library `venv`.
 
-### 1. Clone the Repository
+### 1. Clone Repository & Environment Setup
 ```bash
+# Clone the repository
 git clone https://github.com/krutika-here/BBAT104_TQM_AU_24_5942.git
 cd BBAT104_TQM_AU_24_5942
+
+# Create and activate virtual environment
+python3 -m venv .venv
+source .venv/bin/activate  # On Windows: .venv\Scripts\activate
+
+# Install required dependencies
+pip install -r requirements.txt
 ```
 
-### 2. Environment Setup
-
-#### On Ubuntu / Debian Linux:
+### 2. Database Initialization
+The database schema initializes automatically on first run. To manually verify or re-initialize:
 ```bash
-# Update package list and install Python 3 with Tkinter support
-sudo apt update
-sudo apt install -y python3 python3-tk
-
-# Verify Tkinter installation
-python3 -c "import tkinter; print('Tkinter is ready!')"
+python3 -c "import database; database.init_db(); print('Database verified successfully.')"
 ```
 
-#### On Windows / macOS:
-Tkinter is bundled by default with official installers from [python.org](https://www.python.org/). Ensure the **"tcl/tk and IDLE"** option is checked during installation.
-
-### 3. Launching the Application
-
-#### Option A: Graphical User Interface (Primary Mode)
+### 3. Launching the Web Application (Primary Interface)
 ```bash
+# Run Flask web application
+python3 app.py
+```
+Open your web browser and navigate to: **`http://127.0.0.1:5000`**
+
+### 4. Launching the Preserved Fallback Interfaces
+```bash
+# Graphical Desktop Mode (requires X11/Tkinter)
 python3 main.py
-```
 
-#### Option B: Interactive Terminal Mode (Headless / CLI Fallback)
-```bash
+# Headless / Terminal CLI Mode
 python3 main.py --cli
 ```
 
-### Flask Website
+---
 
-The browser-based migration currently provides a dashboard shell, shared navigation, a persistent light/dark theme, and a theme keyboard shortcut (`T`). Dashboard metrics are placeholders; quiz, results, reports, and TQM pages are not yet implemented and are clearly labeled as such. The existing Tkinter/CLI application remains available using the commands above.
+## Default User Roles & Credentials (Development / Evaluation)
 
-#### Create an environment and install dependencies
+For evaluation and testing purposes, the database is pre-seeded with initial accounts:
 
-On Linux or macOS:
+| Role | Username | Default Password | Access Scope |
+| :--- | :--- | :--- | :--- |
+| **Administrator** | `admin` | `Admin@1234` | Full access, user accounts, audit trail (`/audit-logs`) |
+| **Instructor** | `instructor` | `Instructor@1234` | Quiz CRUD (`/quizzes/manage`), Question CRUD, Gradebook |
+| **Student** | `student` | `Student@1234` | Catalog browsing, taking quizzes, private results |
+
+> [!NOTE]
+> In production hosting, default credentials must be rotated or overridden via environment variables. Passwords in the database are stored exclusively as salted hashes (`scrypt` / `pbkdf2:sha256`).
+
+---
+
+## Running the Automated Test Suite
+
+The test suite validates route accessibility, CSRF protection, RBAC boundaries, CRUD operations, password reset token expiry, input bounds, and audit trail persistence:
+
 ```bash
-python3 -m venv .venv
-source .venv/bin/activate
-python -m pip install -r requirements.txt
-```
-
-On Windows:
-```powershell
-py -m venv .venv
-.venv\Scripts\Activate.ps1
-python -m pip install -r requirements.txt
-```
-
-#### Run the website
-
-With the virtual environment activated:
-```bash
-python app.py
-```
-
-Open [http://127.0.0.1:5000](http://127.0.0.1:5000). The development server binds to the local machine and debug mode is off by default.
-
-#### Run the automated website tests
-
-With the virtual environment activated:
-```bash
-python -m unittest discover -s tests -v
+# Run all unit and security tests
+.venv/bin/python -m unittest discover -s tests -p "test_*.py" -v
 ```
 
 ---
 
-## Application of TQM Principles
+## Deployment & Production Hosting Guidance
 
-* **Customer Focus:** Intuitive exam layout, zero-latency feedback, and transparent scorecard breakdowns built around student anxiety reduction.
-* **Continuous Improvement (Kaizen):** Standardized defect logging (`defect_logs`) and the Deming PDCA cycle applied to refine software stability across milestone reviews.
-* **Process-Centric Approach:** Modular separation of concerns mapping inputs, processes, and outputs via SIPOC and architectural sequence flows.
-* **Fact-Based Decision Making:** Data-driven defect tracking and latency telemetry guiding algorithmic optimizations.
-* **Error Prevention (Poka-Yoke):** Mandatory identity validation gates, debounce single-submission locks, and cascade deletion integrity to mistake-proof user interactions.
+For production deployment on cloud platforms (e.g. Render, Railway, PythonAnywhere, AWS EC2):
 
----
-
-## Project Milestone Roadmap (BBAT104 Marking Scheme)
-
-* [x] **Review 1: Setup & SRS (CO1 - 10 Marks)** – *Completed*
-  * Repository initialization, System Architecture Flowchart, SRS Document, Scope Definition.
-* [ ] **Review 2: Base System & CRUD (CO1, CO2 - 15 Marks)**
-  * Base CRUD modules functioning + execution of assigned 5 Quality Goal features.
-* [ ] **Review 3: FMEA & Risk Audit (CO2 - 15 Marks)**
-  * FMEA matrix with RPN scores, SIPOC process map, CTQ Tree, defect logging audit.
-* [ ] **Review 4: SQC & Continuous Improvement (CO2, CO3 - 15 Marks)**
-  * Pareto chart (80/20 analysis), Ishikawa fishbone diagram, checksheets, PDCA cycle log.
-* [ ] **Final Demonstration & Viva (CO3 - 15 Marks: 10 Viva + 5 GitHub Health)**
-  * Live software demonstration, bug defense, oral viva, $\ge 30$ commits health verification.
-
----
-
-## License & Academic Integrity
-
-This project is developed solely for academic coursework evaluation under **BBAT104: Fundamentals of Total Quality Management** for the Academic Session 2026–27. All code, architectural designs, and specifications represent original work adhering to university academic integrity standards.
+1. **Set Environment Variables:**
+   ```bash
+   export FLASK_SECRET_KEY="replace-with-a-cryptographically-strong-random-hex-key"
+   export FLASK_ENV="production"
+   export PORT=5000
+   ```
+2. **Production WSGI Server:**
+   Run using Gunicorn:
+   ```bash
+   gunicorn --bind 0.0.0.0:$PORT --workers 2 app:app
+   ```
+3. **HTTPS & Cookie Security:**
+   When running behind an HTTPS reverse proxy (Nginx / Cloudflare / Render), cookies are transmitted with `Secure`, `HttpOnly`, and `SameSite=Lax`.
