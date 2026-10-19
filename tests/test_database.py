@@ -2,6 +2,7 @@ import os
 import sqlite3
 import tempfile
 import unittest
+from datetime import datetime, timezone, timedelta
 
 import database
 
@@ -111,6 +112,99 @@ class DatabaseValidationTests(unittest.TestCase):
 
         self.assertIsNone(database.get_quiz_by_id(self.quiz_id))
         self.assertNotIn(question_id, [q["id"] for q in database.get_questions_by_quiz(self.quiz_id)])
+
+    # --- Q04 Security Database Tests ---
+
+    def test_default_users_seeded(self):
+        users = database.get_all_users()
+        usernames = {u["username"] for u in users}
+        self.assertIn("admin", usernames)
+        self.assertIn("instructor", usernames)
+        self.assertIn("student", usernames)
+        admin = database.get_user_by_username("admin")
+        self.assertEqual(admin["role"], "admin")
+        self.assertNotIn("password_hash", users[0])  # ensure password_hash not leaked in get_all_users
+
+    def test_create_user_and_credential_verification(self):
+        user_id = database.create_user("new_tester", "tester@test.com", "Password@123", role="student")
+        self.assertIsInstance(user_id, int)
+        user = database.get_user_by_id(user_id)
+        self.assertEqual(user["username"], "new_tester")
+        self.assertEqual(user["email"], "tester@test.com")
+        self.assertEqual(user["role"], "student")
+
+        # Verify correct credentials
+        verified = database.verify_user_credentials("new_tester", "Password@123")
+        self.assertIsNotNone(verified)
+        self.assertEqual(verified["id"], user_id)
+
+        # Verify case-insensitive email login
+        verified_email = database.verify_user_credentials("TESTER@TEST.COM", "Password@123")
+        self.assertIsNotNone(verified_email)
+
+        # Verify rejection on bad password
+        self.assertIsNone(database.verify_user_credentials("new_tester", "WrongPassword!"))
+
+    def test_create_user_input_validation(self):
+        # Invalid usernames
+        with self.assertRaises(ValueError):
+            database.create_user("ab", "valid@email.com", "Password@123")
+        with self.assertRaises(ValueError):
+            database.create_user("bad user!", "valid@email.com", "Password@123")
+
+        # Invalid emails
+        with self.assertRaises(ValueError):
+            database.create_user("valid_user", "notanemail", "Password@123")
+
+        # Short passwords
+        with self.assertRaises(ValueError):
+            database.create_user("valid_user", "valid@email.com", "short")
+
+        # Invalid role
+        with self.assertRaises(ValueError):
+            database.create_user("valid_user", "valid@email.com", "Password@123", role="superhero")
+
+    def test_password_reset_lifecycle(self):
+        user_id = database.create_user("reset_user", "reset@test.com", "OldPassword@123")
+        result = database.create_password_reset_token("reset@test.com")
+        self.assertIsNotNone(result)
+        raw_token, user = result
+        self.assertEqual(user["id"], user_id)
+
+        # Verify valid token
+        reset_record = database.verify_password_reset_token(raw_token)
+        self.assertIsNotNone(reset_record)
+        self.assertEqual(reset_record["user_id"], user_id)
+
+        # Consume token with new password
+        success = database.consume_password_reset_token(raw_token, "NewPassword@456")
+        self.assertTrue(success)
+
+        # Token is single-use and cannot be reused
+        self.assertFalse(database.consume_password_reset_token(raw_token, "AnotherPassword@789"))
+        self.assertIsNone(database.verify_password_reset_token(raw_token))
+
+        # Check new password works and old password fails
+        self.assertIsNotNone(database.verify_user_credentials("reset_user", "NewPassword@456"))
+        self.assertIsNone(database.verify_user_credentials("reset_user", "OldPassword@123"))
+
+    def test_audit_logging_and_retrieval(self):
+        database.log_audit_event(
+            event_type="AUTH_LOGIN_SUCCESS",
+            actor_username="test_admin",
+            actor_role="admin",
+            target_entity="system",
+            outcome="SUCCESS",
+            ip_address="127.0.0.1",
+            details="User logged in from test"
+        )
+        logs = database.get_audit_logs(limit=10)
+        self.assertTrue(len(logs) >= 1)
+        latest = logs[0]
+        self.assertEqual(latest["event_type"], "AUTH_LOGIN_SUCCESS")
+        self.assertEqual(latest["actor_username"], "test_admin")
+        self.assertEqual(latest["actor_role"], "admin")
+        self.assertEqual(latest["outcome"], "SUCCESS")
 
 
 if __name__ == "__main__":
