@@ -1016,6 +1016,29 @@ def tqm_placeholder():
     )
 
 
+@app.route("/health")
+def health_check():
+    """Operational health check verifying web server and database responsiveness."""
+    try:
+        conn = database.get_connection()
+        conn.execute("SELECT 1").fetchone()
+        conn.close()
+        db_status = "connected"
+    except Exception as exc:
+        db_status = f"unhealthy: {str(exc)}"
+
+    is_healthy = db_status == "connected"
+    status_code = 200 if is_healthy else 503
+    return jsonify(
+        status="healthy" if is_healthy else "unhealthy",
+        database=db_status,
+        timestamp=time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+        version="2.0.0",
+        course="BBAT104",
+        quality_goal="Q04 - Improve Security"
+    ), status_code
+
+
 if __name__ == "__main__":
     # Local development server execution
     port = int(os.environ.get("PORT", 5000))

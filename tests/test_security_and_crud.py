@@ -393,6 +393,18 @@ class SecurityAndCrudTests(unittest.TestCase):
         self.assertIn(b"My Quiz Examination Results", student_resp.data)
         self.assertIn(b"100.0%", student_resp.data)
 
+    def test_health_check_endpoint(self):
+        """Verify /health endpoint returns HTTP 200 and operational health JSON."""
+        resp = self.client.get("/health")
+        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(resp.content_type, "application/json")
+        data = resp.get_json()
+        self.assertEqual(data.get("status"), "healthy")
+        self.assertEqual(data.get("database"), "connected")
+        self.assertEqual(data.get("course"), "BBAT104")
+        self.assertEqual(data.get("quality_goal"), "Q04 - Improve Security")
+
 
 if __name__ == "__main__":
     unittest.main()
+
