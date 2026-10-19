@@ -3,15 +3,18 @@ Database module for Online Quiz System (BBAT104 - TQM Project).
 Uses SQLite3 for local persistence and CRUD operations.
 """
 
-import sqlite3
+import math
 import os
+import sqlite3
 from datetime import datetime
+from decimal import Decimal, InvalidOperation
 
 DB_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "quiz_system.db")
 
 def get_connection():
     conn = sqlite3.connect(DB_PATH)
     conn.row_factory = sqlite3.Row
+    conn.execute("PRAGMA foreign_keys = ON")
     return conn
 
 def init_db():
@@ -218,6 +221,53 @@ def seed_sample_data(conn):
 
 # --- Quiz CRUD Operations ---
 
+def _required_text(value, field_name):
+    if not isinstance(value, str) or not value.strip():
+        raise ValueError(f"{field_name} cannot be empty.")
+    return value.strip()
+
+
+def _positive_integer(value, field_name):
+    try:
+        number = Decimal(str(value).strip())
+    except (InvalidOperation, TypeError, ValueError):
+        raise ValueError(f"{field_name} must be a positive whole number.") from None
+
+    if not number.is_finite() or number != number.to_integral_value() or number <= 0:
+        raise ValueError(f"{field_name} must be a positive whole number.")
+    return int(number)
+
+
+def _validate_quiz_values(title, time_limit_mins, pass_percentage):
+    title = _required_text(title, "Quiz title")
+    time_limit_mins = _positive_integer(time_limit_mins, "Time limit")
+    try:
+        pass_percentage = float(pass_percentage)
+    except (TypeError, ValueError):
+        raise ValueError("Pass percentage must be between 0 and 100.") from None
+    if not math.isfinite(pass_percentage) or not 0 <= pass_percentage <= 100:
+        raise ValueError("Pass percentage must be between 0 and 100.")
+    return title, time_limit_mins, pass_percentage
+
+
+def _validate_question_values(text, opt_a, opt_b, opt_c, opt_d, correct_opt, marks):
+    question_text = _required_text(text, "Question text")
+    options = (
+        _required_text(opt_a, "Option A"),
+        _required_text(opt_b, "Option B"),
+        _required_text(opt_c, "Option C"),
+        _required_text(opt_d, "Option D"),
+    )
+    if (
+        not isinstance(correct_opt, str)
+        or correct_opt.strip().upper() not in {"A", "B", "C", "D"}
+    ):
+        raise ValueError("Correct option must be A, B, C, or D.")
+    correct_opt = correct_opt.strip().upper()
+    marks = _positive_integer(marks, "Marks")
+    return (question_text, *options, correct_opt, marks)
+
+
 def get_all_quizzes():
     conn = get_connection()
     cursor = conn.cursor()
@@ -241,36 +291,58 @@ def get_quiz_by_id(quiz_id):
     return dict(row) if row else None
 
 def create_quiz(title, description, time_limit_mins=10, pass_percentage=50.0):
+    title, time_limit_mins, pass_percentage = _validate_quiz_values(
+        title, time_limit_mins, pass_percentage
+    )
+    description = "" if description is None else description
+    if not isinstance(description, str):
+        raise ValueError("Quiz description must be text.")
+    description = description.strip()
     conn = get_connection()
     cursor = conn.cursor()
-    cursor.execute("""
-    INSERT INTO quizzes (title, description, time_limit_mins, pass_percentage)
-    VALUES (?, ?, ?, ?)
-    """, (title.strip(), description.strip(), int(time_limit_mins), float(pass_percentage)))
-    conn.commit()
-    new_id = cursor.lastrowid
-    conn.close()
-    return new_id
+    try:
+        cursor.execute("""
+        INSERT INTO quizzes (title, description, time_limit_mins, pass_percentage)
+        VALUES (?, ?, ?, ?)
+        """, (title, description, time_limit_mins, pass_percentage))
+        conn.commit()
+        return cursor.lastrowid
+    finally:
+        conn.close()
 
 def update_quiz(quiz_id, title, description, time_limit_mins, pass_percentage):
+    title, time_limit_mins, pass_percentage = _validate_quiz_values(
+        title, time_limit_mins, pass_percentage
+    )
+    description = "" if description is None else description
+    if not isinstance(description, str):
+        raise ValueError("Quiz description must be text.")
+    description = description.strip()
     conn = get_connection()
     cursor = conn.cursor()
-    cursor.execute("""
-    UPDATE quizzes
-    SET title = ?, description = ?, time_limit_mins = ?, pass_percentage = ?
-    WHERE id = ?
-    """, (title.strip(), description.strip(), int(time_limit_mins), float(pass_percentage), quiz_id))
-    conn.commit()
-    conn.close()
+    try:
+        cursor.execute("""
+        UPDATE quizzes
+        SET title = ?, description = ?, time_limit_mins = ?, pass_percentage = ?
+        WHERE id = ?
+        """, (title, description, time_limit_mins, pass_percentage, quiz_id))
+        conn.commit()
+    finally:
+        conn.close()
 
 def delete_quiz(quiz_id):
     conn = get_connection()
     cursor = conn.cursor()
-    cursor.execute("PRAGMA foreign_keys = ON")
-    cursor.execute("DELETE FROM questions WHERE quiz_id = ?", (quiz_id,))
-    cursor.execute("DELETE FROM quizzes WHERE id = ?", (quiz_id,))
-    conn.commit()
-    conn.close()
+    try:
+        cursor.execute("BEGIN IMMEDIATE")
+        cursor.execute("SELECT 1 FROM attempts WHERE quiz_id = ? LIMIT 1", (quiz_id,))
+        if cursor.fetchone():
+            raise ValueError("Cannot delete a quiz that has recorded student attempts.")
+        cursor.execute("DELETE FROM questions WHERE quiz_id = ?", (quiz_id,))
+        cursor.execute("DELETE FROM quizzes WHERE id = ?", (quiz_id,))
+        conn.commit()
+    finally:
+        conn.close()
 
 # --- Question CRUD Operations ---
 
@@ -283,27 +355,36 @@ def get_questions_by_quiz(quiz_id):
     return [dict(row) for row in rows]
 
 def add_question(quiz_id, text, opt_a, opt_b, opt_c, opt_d, correct_opt, marks=1):
+    question_values = _validate_question_values(
+        text, opt_a, opt_b, opt_c, opt_d, correct_opt, marks
+    )
     conn = get_connection()
     cursor = conn.cursor()
-    cursor.execute("""
-    INSERT INTO questions (quiz_id, question_text, option_a, option_b, option_c, option_d, correct_option, marks)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-    """, (quiz_id, text.strip(), opt_a.strip(), opt_b.strip(), opt_c.strip(), opt_d.strip(), correct_opt.upper(), int(marks)))
-    conn.commit()
-    new_id = cursor.lastrowid
-    conn.close()
-    return new_id
+    try:
+        cursor.execute("""
+        INSERT INTO questions (quiz_id, question_text, option_a, option_b, option_c, option_d, correct_option, marks)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        """, (quiz_id, *question_values))
+        conn.commit()
+        return cursor.lastrowid
+    finally:
+        conn.close()
 
 def update_question(question_id, text, opt_a, opt_b, opt_c, opt_d, correct_opt, marks=1):
+    question_values = _validate_question_values(
+        text, opt_a, opt_b, opt_c, opt_d, correct_opt, marks
+    )
     conn = get_connection()
     cursor = conn.cursor()
-    cursor.execute("""
-    UPDATE questions
-    SET question_text = ?, option_a = ?, option_b = ?, option_c = ?, option_d = ?, correct_option = ?, marks = ?
-    WHERE id = ?
-    """, (text.strip(), opt_a.strip(), opt_b.strip(), opt_c.strip(), opt_d.strip(), correct_opt.upper(), int(marks), question_id))
-    conn.commit()
-    conn.close()
+    try:
+        cursor.execute("""
+        UPDATE questions
+        SET question_text = ?, option_a = ?, option_b = ?, option_c = ?, option_d = ?, correct_option = ?, marks = ?
+        WHERE id = ?
+        """, (*question_values, question_id))
+        conn.commit()
+    finally:
+        conn.close()
 
 def delete_question(question_id):
     conn = get_connection()

@@ -156,12 +156,19 @@ def start_quiz(quiz_id):
     student_roll = request.form.get("student_roll", "").strip()
     questions = database.get_questions_by_quiz(quiz_id)
     if not student_name or not student_roll:
+        error = "Enter both your name and roll number to start the quiz."
+    elif len(student_name) > 100 or len(student_roll) > 50:
+        error = "Name must be at most 100 characters and roll number at most 50 characters."
+    else:
+        error = None
+
+    if error:
         return render_template(
             "quiz_details.html",
             quiz=quiz,
             question_count=len(questions),
             csrf_token=get_attempt_csrf_token(),
-            error="Enter both your name and roll number to start the quiz.",
+            error=error,
         ), 400
     if not questions:
         return render_template(

@@ -68,6 +68,8 @@ class FlaskApplicationTests(unittest.TestCase):
         self.assertIn(b'href="/results"', response.data)
         self.assertIn(b'href="/reports"', response.data)
         self.assertIn(b'href="/tqm"', response.data)
+        self.assertIn(b"Quiz attempts are stored in SQLite", response.data)
+        self.assertNotIn(b"Zero DB Alterations", response.data)
 
     def test_dashboard_displays_database_quiz_titles_counts_and_durations(self):
         response = self.client.get("/")
@@ -177,6 +179,10 @@ class FlaskApplicationTests(unittest.TestCase):
                 self.assertIn(title, response.data)
                 self.assertIn(b"Phase 2 Scope Boundary", response.data)
                 self.assertIn(b"Scheduled for Phase", response.data)
+                self.assertIn(
+                    b"This module's features are not implemented on the web application yet",
+                    response.data,
+                )
 
     def test_quiz_listing_uses_database_records_without_answer_keys(self):
         response = self.client.get("/quizzes")
@@ -254,6 +260,21 @@ class FlaskApplicationTests(unittest.TestCase):
         response = self._start_attempt(student_name="  ", student_roll="TEST-1")
         self.assertEqual(response.status_code, 400)
         self.assertIn(b"Enter both your name and roll number", response.data)
+
+    def test_start_rejects_identity_values_over_server_side_limits(self):
+        oversized_values = (
+            ("N" * 101, "TEST-1"),
+            ("Test Student", "R" * 51),
+        )
+        for student_name, student_roll in oversized_values:
+            with self.subTest(name_length=len(student_name), roll_length=len(student_roll)):
+                response = self._start_attempt(
+                    student_name=student_name,
+                    student_roll=student_roll,
+                )
+                self.assertEqual(response.status_code, 400)
+                self.assertIn(b"at most 100 characters", response.data)
+                self.assertEqual(self._stored_attempt(), [])
 
     def test_start_rejects_unknown_or_empty_quiz(self):
         response = self.client.post("/quizzes/999/start", data={})

@@ -540,7 +540,11 @@ class QuizApp(tk.Tk):
         quiz_title = values[1]
 
         if messagebox.askyesno("Confirm Delete", f"Are you sure you want to delete quiz '{quiz_title}' and all its questions?"):
-            database.delete_quiz(quiz_id)
+            try:
+                database.delete_quiz(quiz_id)
+            except ValueError as error:
+                messagebox.showwarning("Quiz Has Attempts", str(error))
+                return
             messagebox.showinfo("Deleted", "Quiz deleted successfully.")
             self.refresh_quizzes_list()
 
@@ -655,7 +659,11 @@ class QuizApp(tk.Tk):
         try:
             m = int(marks)
         except ValueError:
-            m = 1
+            messagebox.showwarning("Validation Error", "Marks must be a positive whole number.")
+            return
+        if m <= 0:
+            messagebox.showwarning("Validation Error", "Marks must be a positive whole number.")
+            return
 
         database.add_question(quiz_id, text, opt_a, opt_b, opt_c, opt_d, ans, m)
         messagebox.showinfo("Success", "Question added successfully!")
