@@ -1,0 +1,80 @@
+{% extends "base.html" %}
+
+{% block title %}{{ "Edit Question #" ~ question.id if question else "Add Question" }} - Base CRUD{% endblock %}
+
+{% block content %}
+<div class="auth-container" style="max-width: 720px;">
+    <div class="form-card">
+        <div style="margin-bottom: 24px; border-bottom: 1px solid var(--border-color); padding-bottom: 16px;">
+            <span class="goal-tag">Base System CRUD &bull; Question Item</span>
+            <h1 style="font-size: 22px; font-weight: 800; color: var(--text-primary); margin-top: 4px;">
+                {{ "Edit Question" if question else "Add Question to: " ~ quiz.title }}
+            </h1>
+        </div>
+
+        {% if error %}
+        <div class="alert alert-danger" role="alert" style="background-color: #FEE2E2; color: #B91C1C; border: 1px solid #FCA5A5; padding: 12px; border-radius: 6px; margin-bottom: 18px;">
+            {{ error }}
+        </div>
+        {% endif %}
+
+        <form method="POST" action="{{ url_for('question_edit', question_id=question.id) if question else url_for('question_add', quiz_id=quiz.id) }}">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+            <div class="form-group">
+                <label for="text" class="form-label">Question Text / Stem</label>
+                <textarea id="text" name="text" class="form-textarea" rows="3" required autofocus placeholder="Enter the complete question stem here...">{{ (question.question_text if question else text) or '' }}</textarea>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+                <div class="form-group">
+                    <label for="opt_a" class="form-label">Option A</label>
+                    <input type="text" id="opt_a" name="opt_a" class="form-input" required placeholder="Text for Option A" value="{{ (question.option_a if question else opt_a) or '' }}">
+                </div>
+
+                <div class="form-group">
+                    <label for="opt_b" class="form-label">Option B</label>
+                    <input type="text" id="opt_b" name="opt_b" class="form-input" required placeholder="Text for Option B" value="{{ (question.option_b if question else opt_b) or '' }}">
+                </div>
+
+                <div class="form-group">
+                    <label for="opt_c" class="form-label">Option C</label>
+                    <input type="text" id="opt_c" name="opt_c" class="form-input" required placeholder="Text for Option C" value="{{ (question.option_c if question else opt_c) or '' }}">
+                </div>
+
+                <div class="form-group">
+                    <label for="opt_d" class="form-label">Option D</label>
+                    <input type="text" id="opt_d" name="opt_d" class="form-input" required placeholder="Text for Option D" value="{{ (question.option_d if question else opt_d) or '' }}">
+                </div>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+                <div class="form-group">
+                    <label for="correct_opt" class="form-label">Correct Option (Answer Key)</label>
+                    {% set cur_ans = (question.correct_option if question else correct_opt) or 'A' %}
+                    <select id="correct_opt" name="correct_opt" class="form-select" required>
+                        <option value="A" {% if cur_ans == 'A' %}selected{% endif %}>Option A</option>
+                        <option value="B" {% if cur_ans == 'B' %}selected{% endif %}>Option B</option>
+                        <option value="C" {% if cur_ans == 'C' %}selected{% endif %}>Option C</option>
+                        <option value="D" {% if cur_ans == 'D' %}selected{% endif %}>Option D</option>
+                    </select>
+                    <span class="form-help">Stored server-side only; never sent to student browser prior to submission.</span>
+                </div>
+
+                <div class="form-group">
+                    <label for="marks" class="form-label">Marks Awarded</label>
+                    <input type="number" id="marks" name="marks" class="form-input" min="1" max="50" required value="{{ (question.marks if question else marks) or 1 }}">
+                    <span class="form-help">Positive whole number (usually 1, 2, or 5).</span>
+                </div>
+            </div>
+
+            <div class="form-actions">
+                <a href="{{ url_for('quiz_questions_manage', quiz_id=quiz.id if quiz else question.quiz_id) }}" class="btn btn-secondary">Cancel</a>
+                <button type="submit" class="btn btn-primary">
+                    {{ "Update Question" if question else "Add Question" }}
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
