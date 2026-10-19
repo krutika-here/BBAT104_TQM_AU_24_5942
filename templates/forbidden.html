@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+
+{% block title %}Access Denied - 403 Forbidden{% endblock %}
+
+{% block content %}
+<div class="auth-container" style="max-width: 600px;">
+    <div class="auth-card" style="text-align: center;">
+        <span style="font-size: 48px;">🛡️</span>
+        <h1 class="auth-title" style="margin-top: 12px; color: var(--danger);">403 - Access Forbidden</h1>
+        <p class="auth-subtitle" style="font-size: 15px; margin: 12px 0 20px 0;">
+            {{ message or "You do not have the required role privileges to access this administrative resource." }}
+        </p>
+
+        <div style="background-color: var(--bg-surface-alt); padding: 16px; border-radius: var(--radius-sm); text-align: left; font-size: 13px; color: var(--text-secondary); margin-bottom: 24px; border: 1px solid var(--border-color);">
+            <strong>Security Boundary Enforcement:</strong>
+            <p style="margin: 6px 0 0 0;">This event has been logged to the Security Audit Trail with your username, role, IP address, and target URI under Defense-in-Depth policy.</p>
+        </div>
+
+        <div style="display: flex; justify-content: center; gap: 12px;">
+            <a href="{{ url_for('index') }}" class="btn btn-primary">Return to Dashboard</a>
+            <a href="{{ url_for('quizzes') }}" class="btn btn-secondary">Browse Quizzes</a>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -588,10 +588,15 @@ def create_user(username, email, password, role="student"):
 def get_user_by_id(user_id):
     conn = get_connection()
     cursor = conn.cursor()
-    cursor.execute("SELECT * FROM users WHERE id = ?", (user_id,))
-    row = cursor.fetchone()
-    conn.close()
-    return dict(row) if row else None
+    try:
+        cursor.execute("SELECT 1 FROM sqlite_master WHERE type='table' AND name='users'")
+        if not cursor.fetchone():
+            return None
+        cursor.execute("SELECT * FROM users WHERE id = ?", (user_id,))
+        row = cursor.fetchone()
+        return dict(row) if row else None
+    finally:
+        conn.close()
 
 def get_user_by_username(username):
     if not isinstance(username, str):
@@ -729,6 +734,9 @@ def log_audit_event(event_type, actor_username, actor_role, target_entity="", ou
     conn = get_connection()
     cursor = conn.cursor()
     try:
+        cursor.execute("SELECT 1 FROM sqlite_master WHERE type='table' AND name='audit_logs'")
+        if not cursor.fetchone():
+            return
         cursor.execute("""
         INSERT INTO audit_logs (event_type, actor_username, actor_role, target_entity, outcome, ip_address, details)
         VALUES (?, ?, ?, ?, ?, ?, ?)

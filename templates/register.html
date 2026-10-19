@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+
+{% block title %}Register - Secure Online Quiz System{% endblock %}
+
+{% block content %}
+<div class="auth-container">
+    <div class="auth-card">
+        <div class="auth-header">
+            <span style="font-size: 36px;">📝</span>
+            <h1 class="auth-title">Student Registration</h1>
+            <p class="auth-subtitle">Create a Student account for secure quiz assessments</p>
+        </div>
+
+        {% if error %}
+        <div class="alert alert-danger" role="alert" style="background-color: #FEE2E2; color: #B91C1C; border: 1px solid #FCA5A5; padding: 12px; border-radius: 6px; margin-bottom: 16px;">
+            {{ error }}
+        </div>
+        {% endif %}
+
+        <form method="POST" action="{{ url_for('register') }}">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+            <div class="form-group">
+                <label for="username" class="form-label">Username</label>
+                <input type="text" id="username" name="username" class="form-input" required autofocus placeholder="Choose a username (3-30 letters/numbers)" value="{{ username or '' }}">
+                <span class="form-help">Letters, numbers, and underscores only.</span>
+            </div>
+
+            <div class="form-group">
+                <label for="email" class="form-label">Email Address</label>
+                <input type="email" id="email" name="email" class="form-input" required placeholder="name@example.com" value="{{ email or '' }}">
+            </div>
+
+            <div class="form-group">
+                <label for="password" class="form-label">Password</label>
+                <input type="password" id="password" name="password" class="form-input" required placeholder="Minimum 8 characters">
+                <span class="form-help">Must be at least 8 characters long.</span>
+            </div>
+
+            <div class="form-group">
+                <label for="confirm_password" class="form-label">Confirm Password</label>
+                <input type="password" id="confirm_password" name="confirm_password" class="form-input" required placeholder="Re-enter your password">
+            </div>
+
+            <div class="form-actions" style="margin-top: 20px;">
+                <button type="submit" class="btn btn-primary" style="width: 100%; justify-content: center; padding: 12px;">
+                    Create Account
+                </button>
+            </div>
+        </form>
+
+        <div style="text-align: center; margin-top: 20px; font-size: 13.5px; color: var(--text-secondary); border-top: 1px solid var(--border-color); padding-top: 16px;">
+            Already have an account? <a href="{{ url_for('login') }}" style="color: var(--primary); font-weight: 600; text-decoration: none;">Sign In</a>
+        </div>
+    </div>
+</div>
+{% endblock %}
