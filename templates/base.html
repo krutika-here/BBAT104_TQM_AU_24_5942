@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}Online Quiz System{% endblock %} - BBAT104 TQM (AU-24-5942)</title>
+    <title>{% block title %}Secure Online Quiz System{% endblock %} - BBAT104 TQM (Roll: 39 / AU-24-5942)</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
 </head>
 <body>
@@ -12,10 +12,10 @@
         <div class="header-container">
             <div class="brand-section">
                 <a href="{{ url_for('index') }}" class="brand-logo">
-                    <span class="logo-icon">📊</span>
+                    <span class="logo-icon">🔒</span>
                     <div class="brand-text">
-                        <span class="system-title">Online Quiz System</span>
-                        <span class="course-subtitle">BBAT104: Fundamentals of TQM &bull; AU-24-5942</span>
+                        <span class="system-title">Secure Online Quiz System</span>
+                        <span class="course-subtitle">BBAT104: Fundamentals of TQM &bull; Roll: 39 (AU-24-5942)</span>
                     </div>
                 </a>
             </div>
@@ -29,15 +29,29 @@
                         </a>
                     </li>
                     <li class="nav-item">
-                        <a href="{{ url_for('quizzes') }}" class="nav-link {% if request.path == '/quizzes' or request.path.startswith('/quizzes/') %}active{% endif %}">
+                        <a href="{{ url_for('quizzes') }}" class="nav-link {% if request.path == '/quizzes' or request.path.startswith('/quizzes/') and not request.path.startswith('/quizzes/manage') %}active{% endif %}">
                             <span class="nav-icon">📝</span> Quizzes
                         </a>
                     </li>
+                    {% if current_user and current_user.role in ['instructor', 'admin'] %}
                     <li class="nav-item">
-                        <a href="{{ url_for('results_placeholder') }}" class="nav-link {% if request.path == '/results' %}active{% endif %}">
-                            <span class="nav-icon">🏆</span> Results <span class="badge badge-muted">Phase 6</span>
+                        <a href="{{ url_for('quizzes_manage') }}" class="nav-link {% if request.path.startswith('/quizzes/manage') or request.path.startswith('/quizzes/create') %}active{% endif %}">
+                            <span class="nav-icon">⚙️</span> Manage Quizzes
                         </a>
                     </li>
+                    {% endif %}
+                    <li class="nav-item">
+                        <a href="{{ url_for('results_view') }}" class="nav-link {% if request.path == '/results' %}active{% endif %}">
+                            <span class="nav-icon">🏆</span> Results
+                        </a>
+                    </li>
+                    {% if current_user and current_user.role == 'admin' %}
+                    <li class="nav-item">
+                        <a href="{{ url_for('audit_logs_view') }}" class="nav-link {% if request.path == '/audit-logs' %}active{% endif %}">
+                            <span class="nav-icon">🛡️</span> Audit Trail
+                        </a>
+                    </li>
+                    {% endif %}
                     <li class="nav-item">
                         <a href="{{ url_for('reports_placeholder') }}" class="nav-link {% if request.path == '/reports' %}active{% endif %}">
                             <span class="nav-icon">📈</span> Reports <span class="badge badge-muted">Phase 7</span>
@@ -45,22 +59,47 @@
                     </li>
                     <li class="nav-item">
                         <a href="{{ url_for('tqm_placeholder') }}" class="nav-link {% if request.path == '/tqm' %}active{% endif %}">
-                            <span class="nav-icon">⚙️</span> TQM Tools <span class="badge badge-muted">Phase 7</span>
+                            <span class="nav-icon">📊</span> TQM Tools <span class="badge badge-muted">Phase 7</span>
                         </a>
                     </li>
                 </ul>
             </nav>
 
-            <!-- User Utilities & Quality Goal Badge -->
+            <!-- User Utilities & Security Badge -->
             <div class="header-utilities">
-                <span class="goal-badge" title="Assigned Quality Goal: Q08 - Improve User Satisfaction">
-                    <span class="goal-dot"></span> Q08: User Satisfaction
+                <span class="goal-badge" title="Assigned Quality Goal: Q04 - Improve Security">
+                    <span class="goal-dot"></span> Q04: Improve Security
                 </span>
-                <!-- Theme Toggle Button (Quality Goal Q08 Feature 3) -->
+
+                <!-- Theme Toggle Button -->
                 <button id="themeToggleBtn" class="btn-theme-toggle" aria-label="Toggle light or dark theme" aria-pressed="false" title="Toggle Theme (Shortcut: Press 'T')">
                     <span id="themeIcon">🌙</span>
-                    <span id="themeLabel" class="theme-label-text">Dark Mode</span>
+                    <span id="themeLabel" class="theme-label-text">Theme</span>
                 </button>
+
+                <!-- Auth Status / Actions -->
+                {% if current_user %}
+                <div style="display: flex; align-items: center; gap: 8px;">
+                    <span class="badge badge-{{ current_user.role }}" title="Logged in as {{ current_user.role }}">
+                        👤 {{ current_user.username }} ({{ current_user.role|capitalize }})
+                    </span>
+                    <form method="POST" action="{{ url_for('logout') }}" style="margin: 0;">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() if csrf_token is callable else csrf_token }}">
+                        <button type="submit" class="btn btn-outline btn-sm" style="color: #FFFFFF; border-color: rgba(255,255,255,0.4);">
+                            Logout
+                        </button>
+                    </form>
+                </div>
+                {% else %}
+                <div style="display: flex; align-items: center; gap: 8px;">
+                    <a href="{{ url_for('login') }}" class="btn btn-outline btn-sm" style="color: #FFFFFF; border-color: rgba(255,255,255,0.4);">
+                        Sign In
+                    </a>
+                    <a href="{{ url_for('register') }}" class="btn btn-primary btn-sm" style="background-color: var(--accent); color: #FFFFFF;">
+                        Register
+                    </a>
+                </div>
+                {% endif %}
             </div>
         </div>
     </header>
@@ -70,7 +109,7 @@
         {% with messages = get_flashed_messages(with_categories=true) %}
             {% if messages %}
                 {% for category, message in messages %}
-                    <div class="alert alert-{{ category }}" role="alert">
+                    <div class="alert alert-{{ category if category != 'error' else 'danger' }}" role="alert" style="{% if category in ['error', 'danger'] %}background-color: #FEE2E2; color: #B91C1C; border: 1px solid #FCA5A5;{% endif %}">
                         <span>{{ message }}</span>
                     </div>
                 {% endfor %}
@@ -88,10 +127,10 @@
         <div class="footer-container">
             <div class="footer-col">
                 <strong>BBAT104: Fundamentals of Total Quality Management</strong>
-                <p>Coursework Academic Session: 2026&ndash;27 | Registration / Roll No: AU-24-5942</p>
+                <p>Coursework Academic Session: 2026&ndash;27 | Roll No: 39 | Registration: AU-24-5942</p>
             </div>
             <div class="footer-col text-right">
-                <span class="status-indicator">● Web Quiz Portal Active</span>
+                <span class="status-indicator">● Web Quiz Portal Active (Q04 Security)</span>
                 <p>Quiz attempts are stored in SQLite &bull; Desktop app (Tkinter/CLI) remains available</p>
             </div>
         </div>

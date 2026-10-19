@@ -1,0 +1,92 @@
+{% extends "base.html" %}
+
+{% block title %}Security Audit Trail - Feature 4 (Q04 Improve Security){% endblock %}
+
+{% block content %}
+<div class="dashboard-container">
+    <div class="hero-banner" style="padding: 24px 28px;">
+        <div class="hero-content">
+            <span class="goal-tag">Quality Goal Q04 &bull; Feature 4: Audit Trail</span>
+            <h1 class="hero-title" style="font-size: 24px; margin-top: 4px;">Security Audit Trail &amp; Access Log</h1>
+            <p class="hero-description" style="font-size: 14px; margin-bottom: 0;">
+                Immutable, append-only security transaction audit logging. Recording authentication events, privilege checks, password resets, and CRUD mutations.
+            </p>
+        </div>
+        <div style="display: flex; gap: 10px; align-items: center;">
+            <span class="badge badge-admin" style="font-size: 13px; padding: 6px 12px;">🛡️ Administrator Access Only</span>
+        </div>
+    </div>
+
+    <!-- Filter Bar -->
+    <div class="filter-bar">
+        <form method="GET" action="{{ url_for('audit_logs_view') }}" style="display: flex; gap: 12px; align-items: center; flex-wrap: wrap;">
+            <label for="event_type" style="font-size: 13.5px; font-weight: 600; color: var(--text-secondary);">Filter Event:</label>
+            <select id="event_type" name="event_type" class="form-select" style="width: auto; padding: 6px 12px; font-size: 13px;" onchange="this.form.submit()">
+                <option value="">All Security Events ({{ audit_logs|length }})</option>
+                <option value="AUTH_LOGIN_SUCCESS" {% if selected_event == 'AUTH_LOGIN_SUCCESS' %}selected{% endif %}>AUTH_LOGIN_SUCCESS</option>
+                <option value="AUTH_LOGIN_FAILURE" {% if selected_event == 'AUTH_LOGIN_FAILURE' %}selected{% endif %}>AUTH_LOGIN_FAILURE</option>
+                <option value="AUTH_LOGOUT" {% if selected_event == 'AUTH_LOGOUT' %}selected{% endif %}>AUTH_LOGOUT</option>
+                <option value="AUTH_REGISTER_SUCCESS" {% if selected_event == 'AUTH_REGISTER_SUCCESS' %}selected{% endif %}>AUTH_REGISTER_SUCCESS</option>
+                <option value="PASSWORD_RESET_REQUESTED" {% if selected_event == 'PASSWORD_RESET_REQUESTED' %}selected{% endif %}>PASSWORD_RESET_REQUESTED</option>
+                <option value="PASSWORD_RESET_COMPLETED" {% if selected_event == 'PASSWORD_RESET_COMPLETED' %}selected{% endif %}>PASSWORD_RESET_COMPLETED</option>
+                <option value="UNAUTHORIZED_ACCESS_ATTEMPT" {% if selected_event == 'UNAUTHORIZED_ACCESS_ATTEMPT' %}selected{% endif %}>UNAUTHORIZED_ACCESS_ATTEMPT</option>
+                <option value="QUIZ_CREATED" {% if selected_event == 'QUIZ_CREATED' %}selected{% endif %}>QUIZ_CREATED</option>
+                <option value="QUIZ_UPDATED" {% if selected_event == 'QUIZ_UPDATED' %}selected{% endif %}>QUIZ_UPDATED</option>
+                <option value="QUIZ_DELETED" {% if selected_event == 'QUIZ_DELETED' %}selected{% endif %}>QUIZ_DELETED</option>
+                <option value="QUESTION_CREATED" {% if selected_event == 'QUESTION_CREATED' %}selected{% endif %}>QUESTION_CREATED</option>
+                <option value="QUESTION_UPDATED" {% if selected_event == 'QUESTION_UPDATED' %}selected{% endif %}>QUESTION_UPDATED</option>
+                <option value="QUESTION_DELETED" {% if selected_event == 'QUESTION_DELETED' %}selected{% endif %}>QUESTION_DELETED</option>
+                <option value="QUIZ_ATTEMPT_SUBMITTED" {% if selected_event == 'QUIZ_ATTEMPT_SUBMITTED' %}selected{% endif %}>QUIZ_ATTEMPT_SUBMITTED</option>
+            </select>
+            {% if selected_event %}
+            <a href="{{ url_for('audit_logs_view') }}" class="btn btn-secondary btn-sm">Clear Filter</a>
+            {% endif %}
+        </form>
+    </div>
+
+    <div class="table-responsive">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th style="width: 50px;">#</th>
+                    <th>Timestamp (UTC)</th>
+                    <th>Event Type</th>
+                    <th>Actor</th>
+                    <th>Role</th>
+                    <th>Target</th>
+                    <th style="text-align: center;">Outcome</th>
+                    <th>IP Address</th>
+                    <th>Context / Details</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for log in audit_logs %}
+                <tr>
+                    <td><strong>#{{ log.id }}</strong></td>
+                    <td style="font-size: 12.5px; color: var(--text-muted); white-space: nowrap;">{{ log.timestamp }}</td>
+                    <td>
+                        <code style="font-weight: 700; color: var(--primary);">{{ log.event_type }}</code>
+                    </td>
+                    <td><strong>{{ log.actor_username }}</strong></td>
+                    <td>
+                        <span class="badge badge-{{ log.actor_role }}">{{ log.actor_role }}</span>
+                    </td>
+                    <td><span style="font-size: 12.5px; color: var(--text-secondary);">{{ log.target_entity or '-' }}</span></td>
+                    <td style="text-align: center;">
+                        <span class="badge badge-outcome-{{ log.outcome|lower }}">{{ log.outcome }}</span>
+                    </td>
+                    <td style="font-size: 12px; color: var(--text-muted);">{{ log.ip_address or '-' }}</td>
+                    <td style="font-size: 13px; color: var(--text-secondary); max-width: 280px;">{{ log.details or '-' }}</td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="9" style="text-align: center; padding: 36px; color: var(--text-muted);">
+                        No audit records found matching the selected criteria.
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}
